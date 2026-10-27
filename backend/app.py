@@ -9,7 +9,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from backend import conversa, llm, memoria, padroes, seguranca
 
@@ -126,6 +126,31 @@ def ver_memoria():
         "padroes": padroes.detetar(metas),
         "metricas": padroes.metricas(metas),
     }
+
+
+class PedidoLLM(BaseModel):
+    mensagens: list[Mensagem]
+    json_: bool = Field(False, alias="json")
+
+
+@app.get("/api/llm")
+def llm_estado():
+    """Ponte do frontend (frontend/ponte.js): o modo live só liga se houver chave."""
+    return {"disponivel": not llm.modo_mock()}
+
+
+@app.post("/api/llm")
+def llm_ponte(pedido: PedidoLLM):
+    """Ponte do frontend: as mensagens vêm já montadas pelo app.js; devolve texto ou JSON do GLM."""
+    if llm.modo_mock():
+        raise HTTPException(503, "Sem chave: o modo live está desligado.")
+    mensagens = [m.model_dump() for m in pedido.mensagens]
+    try:
+        if pedido.json_:
+            return {"json": llm.extrair_json("", mensagens)}
+        return {"texto": llm.responder("", mensagens)}
+    except Exception as e:
+        raise _erro_llm(e)
 
 
 @app.post("/api/resumo-mensal")

@@ -104,6 +104,18 @@
 
 `semanas` vem por ordem cronológica (mais antiga primeiro).
 
+### `GET /api/llm` e `POST /api/llm`: ponte do frontend novo
+
+O frontend novo (`frontend/app.js`, feito como artifact do Claude) monta os próprios prompts e
+pede `window.claude.use("sample")`. `frontend/ponte.js` liga isso a estes endpoints.
+
+```json
+// GET → {"disponivel": true}   (false sem chave: o app.js fica no modo guião)
+// POST pedido
+{"mensagens": [{"role": "user", "content": "…"}], "json": false}
+// POST resposta: {"texto": "…"}  ou, com "json": true, {"json": {…}}
+```
+
 ### `POST /api/resumo-mensal` (P2)
 
 Pedido vazio → `{"texto": "…"}` com a evolução das prioridades e aprendizagens nas últimas 4 semanas.

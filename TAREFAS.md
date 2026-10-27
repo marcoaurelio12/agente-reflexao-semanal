@@ -46,7 +46,7 @@ Ficheiros: `backend/memoria.py`, `padroes.py`, `seguranca.py`, `reset_demo.py`, 
 - [x] B1 `memoria.py`: ler e escrever o diário markdown (frontmatter + corpo) e o `INDEX.md`, até T+0:40
 - [x] B2 `padroes.py`: as 4 regras de padrões + métricas
 - [x] B3 `seguranca.py`: filtro de mal-estar sério + deteção de respostas vagas
-- [ ] B4 `tests/`: os 3 cenários do desafio, com `python -m pytest`
+- [x] B4 `tests/`: os 3 cenários do desafio, com `python -m pytest`
 - [x] B5 `reset_demo.py`: apagar a W44 antes de cada ensaio
 - [ ] B6 A partir de T+1:15, ajudar o Backend A na integração
 

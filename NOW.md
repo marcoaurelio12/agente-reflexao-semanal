@@ -5,6 +5,29 @@
 
 ## 2026-10-27
 
+- 14:35 · integração · Frontend novo (ex-artifact do Claude) ligado ao GLM: `frontend/ponte.js`
+  faz de `window.claude.use("sample")` e chama `/api/llm`. Sem chave fica no guião. Rótulos
+  "Claude" → "GLM". Roteiro reescrito para o fluxo novo (Marta, check-ins diários); pytest: 29
+  verdes. Atenção: o "Aprovar e gravar" do frontend é simulado no browser (não escreve em
+  `memoria/`), as frases de alerta são as do `app.js` e o cartão de apoio não tem o 112.
+- 14:24 · Backend · B4 feito: `tests/` em pytest, 24 testes verdes em 2 s (`python -m pytest`, sem
+  rede nem escritas em `memoria/`; o `/api/guardar` é testado numa pasta temporária; `reset_demo`
+  antes e depois). Cobre os 3 cenários do desafio e os "utilizadores difíceis" no `/api/chat`:
+  "Normal." → a nota de resposta vaga chega ao system do LLM (stub); mal-estar (apoio/urgente)
+  devolve a resposta fixa e o LLM não é chamado; "não aguento mais reuniões sem agenda" passa ao
+  LLM; roteiro completo → `pronto_para_fechar` com `<<FECHAR>>` removido; `/api/fechar` devolve os
+  4 padrões do passo 10 do roteiro; `/api/guardar` → diário + INDEX + painel com 5 semanas.
+  Instalado `httpx` no venv (só para o TestClient). Falta: repetir com a chave real.
+- 14:20 · Backend · Bateria de testes do backend em modo mock (sem chave): tudo verde. Lógica pura:
+  `detetar()` W41–W43 = os 4 padrões do frontmatter da W43; W44 c/ "reuniões a mais" →
+  `bloqueio_recorrente` em 3 das últimas 4; segurança (apoio/urgente/112/SNS 24) e "não aguento
+  mais reuniões sem agenda" não dispara; `e_vaga` ok. Endpoints contra o contrato: roteiro da
+  demo inteiro no `/api/chat` (abertura retoma as prioridades, pergunta concreta após "Normal.",
+  `<<FECHAR>>` removido, `pronto_para_fechar`), `/api/fechar` (campos + temas válidos + padrões
+  do passo 10 do roteiro), `/api/guardar` (W44 no formato exato da W43, idempotente, semana
+  inválida → 400), `/api/memoria` (5 semanas, métricas), contexto na ordem do contrato.
+  `reset_demo` deixa o repo limpo. Falta: repetir com a chave real (o mock não testa o GLM nem
+  o "não inventar nada" do fecho).
 - 14:07 · Backend · Backend mínimo feito (A2–A5, B1–B3, B5): memória, padrões, segurança,
   contexto e os 4 endpoints. `detetar()` sobre W41–W43 = padrões da W43; o roteiro corre em mock
   até ao `memoria/diario/2026-W44.md`, com os mesmos padrões do `mock.js`. Falta: testar com a

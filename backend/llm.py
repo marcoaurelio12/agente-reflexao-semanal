@@ -66,7 +66,7 @@ def _completar(system: str, mensagens: list[dict], **extra) -> str:
         conversa.append({"role": "user", "content": "Olá."})
     pedido = {
         "model": os.getenv("OPENAI_MODEL", "").strip() or MODELO_POR_OMISSAO,
-        "messages": [{"role": "system", "content": system}] + conversa,
+        "messages": ([{"role": "system", "content": system}] if system else []) + conversa,
         **extra,
     }
     esforco = os.getenv("OPENAI_REASONING_EFFORT", "").strip()
