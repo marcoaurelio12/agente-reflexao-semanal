@@ -1,14 +1,16 @@
-"""Chamadas ao LLM: GLM-5.3 da z.ai pelo SDK openai (API compatível), com modo mock sem chave.
+"""Chamadas ao LLM: Gemini (Google) pelo SDK openai (endpoint compatível), com modo mock sem chave.
 
 Lê do .env: OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL, OPENAI_REASONING_EFFORT
-(ver .env.example e DECISOES.md n.º 2). Sem OPENAI_API_KEY corre em modo mock, com a conversa
-da W44 de pitch/ROTEIRO-DEMO.md, igual à de frontend/mock.js.
+(ver .env.example e DECISOES.md n.º 2). Trocar de fornecedor (ex.: z.ai) é só mudar o .env.
+Sem OPENAI_API_KEY corre em modo mock, com a conversa da W44 de pitch/ROTEIRO-DEMO.md.
 Dono: Backend A (tarefas A1 e A4).
 """
 import copy
 import json
+import logging
 import os
 import re
+import time
 from functools import lru_cache
 from pathlib import Path
 
@@ -17,9 +19,15 @@ from dotenv import load_dotenv
 RAIZ = Path(__file__).resolve().parent.parent
 load_dotenv(RAIZ / ".env")
 
-URL_POR_OMISSAO = "https://api.z.ai/api/coding/paas/v4"
-MODELO_POR_OMISSAO = "glm-5.3"
+log = logging.getLogger("uvicorn.error")
+
+URL_POR_OMISSAO = "https://generativelanguage.googleapis.com/v1beta/openai/"
+MODELO_POR_OMISSAO = "gemini-3.6-flash"
 MARCADOR_FECHO = "<<FECHAR>>"
+
+TEMPO_POR_TENTATIVA = 10  # s por modelo
+TEMPO_TOTAL = 24  # s no total: o frontend/ponte.js desiste aos 25 s
+MAX_MODELOS = 3
 
 
 def modo_mock() -> bool:
@@ -51,33 +59,59 @@ def extrair_json(system: str, mensagens: list[dict]) -> dict:
 def _cliente():
     from openai import OpenAI
 
+    # Sem repetições automáticas: se um modelo falha, passa-se logo ao seguinte (ver _modelos).
     return OpenAI(
         api_key=os.environ["OPENAI_API_KEY"].strip(),
         base_url=os.getenv("OPENAI_BASE_URL", "").strip() or URL_POR_OMISSAO,
-        timeout=60,
-        max_retries=1,
+        timeout=TEMPO_POR_TENTATIVA,
+        max_retries=0,
     )
 
 
+def _modelos() -> list[str]:
+    """OPENAI_MODEL primeiro; depois, por ordem, os de OPENAI_FALLBACK_MODELS (separados por vírgulas).
+
+    O plano gratuito do Gemini tem quotas pequenas e por modelo. Com 429, 5xx ou tempo esgotado,
+    tenta-se o modelo seguinte (no máximo MAX_MODELOS).
+    """
+    principal = os.getenv("OPENAI_MODEL", "").strip() or MODELO_POR_OMISSAO
+    extra = [m.strip() for m in os.getenv("OPENAI_FALLBACK_MODELS", "").split(",") if m.strip()]
+    return ([principal] + [m for m in extra if m != principal])[:MAX_MODELOS]
+
+
 def _completar(system: str, mensagens: list[dict], **extra) -> str:
+    import openai
+
     conversa = [{"role": m["role"], "content": m["content"]} for m in mensagens]
     if not any(m["role"] == "user" for m in conversa):
         # Abertura: algumas APIs recusam pedidos só com a mensagem de sistema.
         conversa.append({"role": "user", "content": "Olá."})
     pedido = {
-        "model": os.getenv("OPENAI_MODEL", "").strip() or MODELO_POR_OMISSAO,
         "messages": ([{"role": "system", "content": system}] if system else []) + conversa,
         **extra,
     }
     esforco = os.getenv("OPENAI_REASONING_EFFORT", "").strip()
     if esforco:
         pedido["reasoning_effort"] = esforco
-    resposta = _cliente().chat.completions.create(**pedido)
-    return (resposta.choices[0].message.content or "").strip()
+    ultimo_erro = None
+    inicio = time.monotonic()
+    for modelo in _modelos():
+        restante = TEMPO_TOTAL - (time.monotonic() - inicio)
+        if ultimo_erro is not None and restante < 2:
+            break
+        try:
+            resposta = _cliente().chat.completions.create(
+                model=modelo, timeout=min(TEMPO_POR_TENTATIVA, max(restante, 2)), **pedido)
+            log.info("LLM: respondeu %s em %.1f s", modelo, time.monotonic() - inicio)
+            return (resposta.choices[0].message.content or "").strip()
+        except (openai.RateLimitError, openai.InternalServerError, openai.APITimeoutError) as e:
+            log.warning("LLM: %s falhou (%s); a tentar o seguinte", modelo, type(e).__name__)
+            ultimo_erro = e  # quota, 5xx ou lento: tenta o modelo seguinte
+    raise ultimo_erro
 
 
 def _ler_json(texto: str) -> dict:
-    """json.loads tolerante a um bloco ```json à volta, que o GLM às vezes acrescenta."""
+    """json.loads tolerante a um bloco ```json à volta, que o LLM às vezes acrescenta."""
     limpo = re.sub(r"^```(?:json)?\s*|\s*```$", "", texto.strip())
     dados = json.loads(limpo)
     if not isinstance(dados, dict):

@@ -1,6 +1,6 @@
 // Ponte entre o app.js (feito como artifact do Claude) e o backend Python.
 // O app.js pede window.claude.use("sample"); aqui essa função chama POST /api/llm, que fala
-// com o GLM-5.3 da z.ai. Sem chave no .env, GET /api/llm diz que não está disponível e o
+// com o Gemini. Sem chave no .env, GET /api/llm diz que não está disponível e o
 // app.js usa as respostas de reserva.
 (function () {
   function erro(codigo) {

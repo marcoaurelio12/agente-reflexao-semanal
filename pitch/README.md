@@ -28,7 +28,7 @@ dados, prompts e testes. Marca `[x]` em `TAREFAS.md` quando cumprires o "Feito =
   testes dele dependem delas. **Até T+0:40.**
 - [ ] **D2** Testar os prompts **antes** de o backend estar pronto. Assim o tom fica afinado
   quando a integração chegar. **T+0:40 a T+1:30.** Passos:
-  1. Abre o chat da z.ai (GLM-5.3, o modelo que está no `.env`).
+  1. Abre o chat do Gemini (gemini.google.com ou o AI Studio, com o modelo que está no `.env`).
   2. Cola, por esta ordem e numa só mensagem:
      `agente/AGENTE.md`, `agente/PERGUNTAS.md`, `agente/SEGURANCA.md`, `memoria/CONTEXTO.md`,
      `memoria/INDEX.md` e as 3 entradas de `memoria/diario/`. Acaba com
@@ -50,7 +50,7 @@ dados, prompts e testes. Marca `[x]` em `TAREFAS.md` quando cumprires o "Feito =
   "menos de 5 minutos". Pôr o tempo no slide 9.
 - [ ] **D6** Preparar respostas curtas (2 ou 3 frases) às perguntas prováveis do júri:
   - Onde ficam os dados? (`memoria/`, em ficheiros markdown, no computador que corre o servidor)
-  - O que vai para a z.ai (GLM-5.3)? (no modo live, o texto da conversa, para gerar as respostas; não se guarda a transcrição)
+  - O que vai para o Gemini? (no modo live, o texto da conversa, para gerar as respostas; não se guarda a transcrição)
   - E se alguém escrever algo grave? (filtro no código antes do LLM; pára a reflexão; SNS 24 e 112)
   - Porque não uma base de dados? (3 horas; os ficheiros são legíveis, auditáveis e versionados no git; a base de dados entra quando houver vários utilizadores)
   - Como escala para uma empresa? (slide 8)

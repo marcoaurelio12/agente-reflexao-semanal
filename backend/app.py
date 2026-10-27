@@ -18,7 +18,7 @@ NOTA_VAGA = "A última resposta foi vaga: faz UMA pergunta de seguimento concret
 
 app = FastAPI(title="Agente de Reflexão Semanal")
 log = logging.getLogger("uvicorn.error")
-log.info("LLM: %s", "modo mock (sem OPENAI_API_KEY)" if llm.modo_mock() else "z.ai")
+log.info("LLM: %s", "modo mock (sem OPENAI_API_KEY)" if llm.modo_mock() else "Gemini")
 
 
 class Mensagem(BaseModel):
@@ -141,7 +141,7 @@ def llm_estado():
 
 @app.post("/api/llm")
 def llm_ponte(pedido: PedidoLLM):
-    """Ponte do frontend: as mensagens vêm já montadas pelo app.js; devolve texto ou JSON do GLM."""
+    """Ponte do frontend: as mensagens vêm já montadas pelo app.js; devolve texto ou JSON do Gemini."""
     if llm.modo_mock():
         raise HTTPException(503, "Sem chave: o modo live está desligado.")
     mensagens = [m.model_dump() for m in pedido.mensagens]

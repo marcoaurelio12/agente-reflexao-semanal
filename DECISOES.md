@@ -4,15 +4,30 @@
 
 1. **Stack:** Python 3.11 + FastAPI no backend; HTML/CSS/JS sem build no frontend, servido pelo
    mesmo servidor (sem CORS, um só comando para correr).
-2. **LLM:** GLM-5.3 da z.ai, pelo endpoint do GLM Coding Plan
-   (`https://api.z.ai/api/coding/paas/v4`, compatível com OpenAI), com o SDK oficial `openai`.
+2. **LLM (demo sem modelo, 2026-10-27 15:20, Marco):** a conta do Gemini ficou sem créditos
+   (402) e o Marco não vai pôr crédito, por isso a demo corre com as respostas de reserva da app
+   (pré-escritas, sem rótulo de modelo). O código continua pronto para o Gemini: com créditos e
+   a chave no `.env`, as mensagens passam a ser do modelo sem mexer em mais nada.
+   **LLM:** Gemini (Google), pelo endpoint compatível com OpenAI
+   (`https://generativelanguage.googleapis.com/v1beta/openai/`), com o SDK oficial `openai`.
+   Modelo principal: `gemini-3.6-flash` (~3 s por mensagem), com alternativas automáticas
+   (`OPENAI_FALLBACK_MODELS=gemini-3.5-flash,gemini-3.5-flash-lite`) quando há 429, 503 ou lentidão.
    Chave, URL, modelo e esforço de raciocínio vêm do `.env` (`OPENAI_API_KEY`, `OPENAI_BASE_URL`,
    `OPENAI_MODEL`, `OPENAI_REASONING_EFFORT`). Sem chave, o backend corre em modo mock, para o
    frontend trabalhar desde o minuto 1.
-   _2026-10-27 13:51, Marco: era OpenAI. Risco aceite: a z.ai só autoriza o Coding Plan dentro de
-   ferramentas de código suportadas, e o uso a partir de uma app pode dar limites ou congelar a
-   conta; partilhar a chave com a equipa também conta como infração. Plano B: mudar
-   `OPENAI_BASE_URL` e a chave para a API geral da z.ai ou para a OpenAI, sem mexer no código._
+   _2026-10-27 13:51, Marco: era OpenAI; passou a GLM-5.3 da z.ai (Coding Plan), com o risco
+   aceite de a z.ai só autorizar o Coding Plan em ferramentas de código suportadas._
+   _2026-10-27 15:02, Marco: passou a Gemini. A z.ai devolveu 429 "Insufficient balance or no
+   resource package" com 3 chaves; a única que funciona é a do `glm`, que é do Coding Plan e não
+   deve ser usada numa app. Plano B: mudar `OPENAI_BASE_URL`, a chave e `OPENAI_MODEL` no `.env`
+   (z.ai ou OpenAI), sem mexer no código. A chave é do plano gratuito do Gemini, com quotas
+   pequenas e por modelo: o `gemini-3-flash-preview` (o mais rápido, 1 a 3 s) só deixa 20 pedidos
+   por dia e já foi esgotado nos testes. Um percurso completo da app gasta 10 a 15 pedidos, por
+   isso poupar nos ensaios. A solução definitiva é ativar a faturação do projeto no Google AI
+   Studio (decisão do Marco)._
+   _2026-10-27 15:12: a API passou a devolver `402 Your prepayment credits are depleted` em todos
+   os modelos. O Marco decidiu não pôr crédito: a demo corre com as respostas de reserva da app
+   (o código continua pronto para o Gemini; basta haver créditos e reiniciar o servidor)._
 3. **Sem base de dados.** A memória é um diário em markdown em `memoria/` (perfil, índice e uma
    entrada por semana), o mesmo método com que gerimos a Alinhadamente. Uma base de dados a sério
    fica para o slide de escalabilidade.

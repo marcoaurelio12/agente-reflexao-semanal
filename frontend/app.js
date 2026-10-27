@@ -529,14 +529,6 @@ function directive(content){
   return (c.lastUser ? `Resposta de ${P.nome}: «${c.lastUser}»\n\n` : "") + `[Aplicação] Escreve a tua próxima mensagem. Transmite isto pelas tuas palavras, ajustado ao que foi dito, sem acrescentar factos: «${content}»`;
 }
 const HIDE = ["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"];
-function errCopy(code){
-  if (HIDE.includes(code)) return "O GLM não está disponível. A conversa continua com as respostas de reserva.";
-  if (code === "rate_limited") return "Demasiados pedidos ao GLM por agora. Esta mensagem é a resposta de reserva.";
-  if (code === "session_expired") return "A sessão do GLM expirou. Esta mensagem é a resposta de reserva.";
-  if (code === "timeout") return "O GLM não respondeu a tempo. Esta mensagem é a resposta de reserva.";
-  if (code === "network") return "Sem ligação ao servidor. Esta mensagem é a resposta de reserva.";
-  return "O GLM não conseguiu responder. Esta mensagem é a resposta de reserva.";
-}
 function liveOn(){ return S.engine === "live" && SAMPLE && !liveDisabled; }
 async function agentSay(content){
   const c = S.chat;
@@ -550,9 +542,13 @@ async function agentSay(content){
         onText:({text}) => { x.t = text; if (x.node) { x.node.textContent = text; scrollDown(); } }});
       x.t = r.text; c.liveTurns.push({role:"assistant", content:r.text});
     }catch(e){
-      x.t = content; c.liveTurns.push({role:"assistant", content});
+      // Sem resposta do modelo: fica a mensagem de reserva, sem rótulo do modelo nem nota de erro.
+      x.t = content; x.live = false;
+      if (x.node && x.node.parentNode) x.node.parentNode.classList.remove("live");
+      c.liveTurns.push({role:"assistant", content});
       trace("llm_chat", "erro: " + ((e && (e.code || e.message)) || "desconhecido"));
-      if (e && e.code !== "cancelled"){ if (HIDE.includes(e.code)){ liveDisabled = true; S.engine = "guiao"; renderEngine(); } push({r:"note", t:errCopy(e.code)}); }
+      // Não voltar a tentar nesta sessão (evita esperar o tempo-limite em cada mensagem).
+      if (!e || e.code !== "cancelled"){ liveDisabled = true; S.engine = "guiao"; renderEngine(); }
     }
     if (x.node) x.node.textContent = x.t;
     c.ctl = null;
@@ -784,7 +780,7 @@ function scriptedReport(){
 async function liveReport(btn){
   if (!liveOn()) return;
   if (S.report) delete S.report.liveErr;
-  btn.disabled = true; btn.textContent = "O GLM está a escrever…";
+  btn.disabled = true; btn.textContent = "O Gemini está a escrever…";
   const dias = doneDays().map(x => { const r = S.days[x.k]; return `${x.Nome}: energia ${r.energia}; correu bem: ${r.correu_bem?.texto||"-"}; bloqueio: ${r.bloqueio?.nenhum?"nenhum":(r.bloqueio?.texto||"-")}; aprendizagem: ${r.aprendizagem?.texto||"-"}; reunião/entrega: ${r.playbook?.texto||"-"}`; }).join("\n");
   const pats = patternLines().map(p => "- " + p.txt).join("\n") || "- nenhum";
   let falhou = true;
@@ -884,8 +880,8 @@ function renderReport(){
   const box = $("#reportBox");
   box.innerHTML = `
   <header class="rhead"><div><div class="eyebrow">Relatório semanal · semana 4</div><h2>19 a 23 de outubro</h2>
-    <div class="s">${esc(P.nome)} · ${R.fonte==="claude" ? "escrito pelo GLM a partir dos check-ins" : "gerado a partir dos check-ins diários"} · ${P.relatorio==="segunda" ? "chega na segunda de manhã" : "chega na sexta, depois do check-in"}</div></div>
-    <div class="row">${liveOn() && !saved ? '<button type="button" class="btn" id="rLive">Reescrever com o GLM</button>' : ""}${saved ? "" : `<button type="button" class="btn" id="rRegen">${R.confirmRegen ? "Confirmar: perder as edições" : "Gerar de novo"}</button>`}</div></header>
+    <div class="s">${esc(P.nome)} · ${R.fonte==="claude" ? "escrito pelo Gemini a partir dos check-ins" : "gerado a partir dos check-ins diários"} · ${P.relatorio==="segunda" ? "chega na segunda de manhã" : "chega na sexta, depois do check-in"}</div></div>
+    <div class="row">${liveOn() && !saved ? '<button type="button" class="btn" id="rLive">Reescrever com o Gemini</button>' : ""}${saved ? "" : `<button type="button" class="btn" id="rRegen">${R.confirmRegen ? "Confirmar: perder as edições" : "Gerar de novo"}</button>`}</div></header>
   ${banner}
   <section class="fb" aria-label="Feedback da semana">
     <div class="fb-top"><div class="row" style="justify-content:space-between"><span class="eyebrow">Feedback da semana</span>${saved ? "" : `<button type="button" class="linkbtn" id="rEditResumo">${R.editResumo ? "Concluir" : "Editar resumo"}</button>`}</div>
@@ -1106,12 +1102,6 @@ function renderProfile(){
   $("#respList").innerHTML = P.resp.map((r,i) => `<li><span class="i">${i+1}</span><span>${esc(r)}</span><button type="button" data-i="${i}" aria-label="Remover: ${esc(r)}">Remover</button></li>`).join("");
   $("#respCount").textContent = `${P.resp.length} de 8`;
   $("#teamsSt").innerHTML = P.teams ? `<span class="pill good">Ligado</span><span>Última importação: ${esc(P.sync)} · ${Object.values(AG).flat().length} eventos esta semana</span><button type="button" class="btn small" id="syncBtn">Importar agora</button>` : '<span class="pill off">Desligado</span><span>A agenda não é lida. As perguntas usam só a conversa e as responsabilidades.</span>';
-  const meetings = Object.entries(AG).flatMap(([k,evs]) => evs.filter(e=>e.tr).map(e => [k,e]));
-  $("#trList").innerHTML = !P.teams ? '<div><span class="muted">Precisa da agenda do Teams ligada.</span></div>'
-    : meetings.map(([k,e]) => { const s = trStatus(e); return `<div><span>${DAYN[k].Nome.slice(0,3)} · ${esc(e.t)}</span>${s.lock?`<span class="lockt">${LOCK} ${s.txt.replace("Bloqueada: ","")}</span>`:'<span class="okt">disponível</span>'}</div>`; }).join("");
-  const L = lvl();
-  $("#lvlNum").textContent = L;
-  $("#lvlTxt").textContent = ["Nível de acesso 0: só a conversa.","Nível de acesso 1: conversa e agenda do Teams.","Nível de acesso 2: conversa, agenda e transcrições permitidas."][L];
   $("#who").textContent = P.nome || "Sem nome";
 }
 FIELDS.forEach(([id,k]) => $("#"+id).addEventListener("input", e => {
@@ -1269,7 +1259,7 @@ function renderEngine(){
   $("#engGuiao").setAttribute("aria-checked", String(S.engine==="guiao"));
   $("#engLive").setAttribute("aria-checked", String(S.engine==="live"));
   $("#engLive").disabled = !SAMPLE || liveDisabled;
-  $("#engLive").title = SAMPLE && !liveDisabled ? "As mensagens do agente passam a ser escritas pelo GLM" : "Indisponível nesta vista";
+  $("#engLive").title = SAMPLE && !liveDisabled ? "As mensagens do agente passam a ser escritas pelo Gemini" : "Indisponível nesta vista";
 }
 function showPane(id){
   document.querySelectorAll("#subtabs button").forEach(x => x.setAttribute("aria-selected", String(x.dataset.pane===id)));
@@ -1295,7 +1285,7 @@ function boot(){
   startFirstDay();
 }
 
-// Só arranca depois de saber se o GLM está disponível, para a 1.ª mensagem já vir dele.
+// Só arranca depois de saber se o Gemini está disponível, para a 1.ª mensagem já vir dele.
 const ligarGLM = (window.claude && typeof window.claude.use === "function")
   ? window.claude.use("sample").then(s => { SAMPLE = s || null; }).catch(() => { SAMPLE = null; })
   : Promise.resolve();

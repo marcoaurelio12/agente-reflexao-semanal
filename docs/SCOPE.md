@@ -93,7 +93,7 @@ O mapa completo das ideias da equipa está em [`ideias-equipa.md`](ideias-equipa
 
 | Risco | Mitigação |
 |---|---|
-| A API da z.ai falha, fica lenta ou congela a conta (Coding Plan) na demo | Vídeo de backup (T+2:15) + modo mock + `OPENAI_BASE_URL` para a API geral ou a OpenAI |
+| A API do Gemini falha, fica lenta ou esgota a quota na demo | Vídeo de backup (T+2:15) + modo mock + `OPENAI_BASE_URL`, chave e modelo para a z.ai ou a OpenAI |
 | O JSON do fecho vem mal formado | `response_format` JSON + validação + 1 nova tentativa |
 | A integração atrasa | Contrato de API fechado desde o início (`ARQUITETURA.md`); o frontend trabalha com mock |
 | O LLM não repara no padrão | Os padrões são calculados no código e entram no contexto; o cartão mostra-os sempre |

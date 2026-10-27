@@ -5,6 +5,17 @@
 
 ## 2026-10-27
 
+- 15:17 · frontend · Sem resposta do modelo, a mensagem de reserva aparece só como "Agente" (sem
+  nota laranja nem "· Gemini") e a app deixa de tentar o Gemini até recarregar a página. Saiu do
+  Perfil o bloco das transcrições (descrição, lista de reuniões, "Nível de acesso"). Roteiro e
+  decisão 2 dizem que a demo corre com respostas pré-escritas: avisar o júri.
+- 15:12 · LLM · Passou-se de z.ai a Gemini (decisão 2): `.env.example`, `llm.py` (modelo
+  principal `gemini-3.6-flash` + alternativas em `OPENAI_FALLBACK_MODELS` com 429/5xx/lentidão, 10 s
+  por tentativa e 24 s no total), textos e etiquetas "GLM" → "Gemini". O Gemini respondeu bem
+  (1 a 3 s) mas esgotou as quotas gratuitas e agora dá `402 prepayment credits are depleted` em
+  todos os modelos: a demo corre com as respostas de reserva (o Marco não põe crédito). Por
+  confirmar: tratamento de dados do Gemini (plano gratuito/pago) para o slide de confiança; se
+  houver créditos, um ensaio real (10 a 15 pedidos) antes da demo.
 - 15:10 · frontend + Backend B · Filtro de mal-estar do frontend corrigido: `app.js` usa as mesmas
   expressões de `backend/seguranca.py` (constante `BEM_ESTAR`) e corre em todas as respostas, antes
   da validação (já apanha a frase de mal-estar na pergunta da energia). Antes falhava "quero

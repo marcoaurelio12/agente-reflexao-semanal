@@ -12,7 +12,7 @@ from backend.app import app
 
 @pytest.fixture(autouse=True)
 def modo_mock(monkeypatch):
-    """Sem chave, mesmo que o .env tenha uma: os testes nunca vão à rede nem gastam quota do GLM."""
+    """Sem chave, mesmo que o .env tenha uma: os testes nunca vão à rede nem gastam quota do LLM."""
     monkeypatch.setenv("OPENAI_API_KEY", "")
 
 

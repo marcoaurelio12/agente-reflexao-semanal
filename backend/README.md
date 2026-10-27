@@ -80,7 +80,7 @@ mudar as assinaturas. NÃO mexas em backend/memoria.py, padroes.py, seguranca.py
 nem em tests/ — são do Backend B. Enquanto essas funções derem NotImplementedError, usa
 valores temporários dentro do teu código, nunca nos ficheiros dele.
 
-1. llm.py: JÁ FEITO (A1). Usa o SDK openai contra a z.ai (OPENAI_API_KEY, OPENAI_BASE_URL,
+1. llm.py: JÁ FEITO (A1). Usa o SDK openai contra o Gemini (OPENAI_API_KEY, OPENAI_BASE_URL,
    OPENAI_MODEL e OPENAI_REASONING_EFFORT no .env). Só mexe nele se for preciso.
    - responder(system, mensagens) -> str.
    - extrair_json(system, mensagens) -> dict: response_format JSON; se o JSON vier inválido,

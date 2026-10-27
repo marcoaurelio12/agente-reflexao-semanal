@@ -11,12 +11,12 @@
  │ chat         │ ───────────────▶ │ 1. seguranca.verificar()       │ ◀──── │ agente/*.md, temas.yaml │
  │ cartão fecho │ ◀─────────────── │ 2. contexto = prompts + diário │ ◀──── │ memoria/CONTEXTO.md     │
  │ painel       │ POST /api/fechar │    + padrões + agenda          │ ◀──── │ memoria/INDEX.md        │
- └──────────────┘ POST /api/guardar│ 3. llm (z.ai ou mock)          │       │ memoria/diario/*.md     │
+ └──────────────┘ POST /api/guardar│ 3. llm (Gemini ou mock)        │       │ memoria/diario/*.md     │
                   GET /api/memoria │ 4. padroes.detetar()           │ ────▶ │ (escreve 2026-W44.md)   │
                                    └────────────────────────────────┘       └─────────────────────────┘
                                                   │ texto da conversa
                                                   ▼
-                                           API z.ai (GLM-5.3)
+                                           API Gemini (Google)
 ```
 
 ## Fluxo

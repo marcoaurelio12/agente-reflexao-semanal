@@ -23,7 +23,7 @@ Cada entrada do diário tem duas partes:
 
 - Guarda-se a entrada estruturada da semana.
 - **Não** se guarda a transcrição da conversa.
-- Durante a conversa, no modo live, o texto é enviado à API da z.ai (GLM-5.3) para gerar as respostas;
+- Durante a conversa, no modo live, o texto é enviado à API do Gemini para gerar as respostas;
   no modo guião não sai do computador. Numa versão real isto tem de constar do consentimento
   (alternativas: modelo local ou um fornecedor com processamento na UE).
 

@@ -4,15 +4,18 @@
 > Quem conduz a demo fala para o júri; as respostas da Marta **colam-se**, não se escrevem ao vivo.
 > Em cada pergunta, por cima da caixa de texto, há botões "Sugestões:" com estas mesmas frases.
 > Clicar no botão envia exatamente o mesmo texto que colar.
-> As mensagens do agente são escritas pelo GLM-5.3 (só há este modo), por isso as frases variam
-> um pouco de ensaio para ensaio; o que o agente pergunta e os padrões são sempre os mesmos.
-> **Ensaiar uma vez de ponta a ponta com a chave.**
+> **Decisão do Marco, 2026-10-27 15:20: a demo corre com as respostas de reserva** (sem créditos
+> no Gemini: a API devolve 402 "prepayment credits are depleted"). As mensagens do agente são
+> pré-escritas e aparecem só como "Agente", sem rótulo de modelo nem notas de erro. **Dizer ao
+> júri que as respostas desta demo são pré-escritas**; o que é real é o fluxo, as regras de
+> padrões, o filtro de segurança e o relatório. Com créditos, as mensagens seriam escritas pelo
+> Gemini (rótulo "· Gemini") e as frases variariam um pouco entre ensaios.
 
 ## Checklist antes da demo
 
-- [ ] Chave da z.ai no `.env` e servidor reiniciado depois de a pôr. Testar 5 minutos antes: as
-      mensagens do agente têm de aparecer como "AGENTE · GLM". Sem chave aparecem só como
-      "AGENTE" (respostas de reserva).
+- [ ] Gemini: só se houver créditos no projeto (AI Studio). Nesse caso, chave no `.env`, servidor
+      reiniciado e um ensaio completo (gasta 10 a 15 pedidos) antes da demo. Sem créditos, a
+      demo usa as respostas de reserva; ensaiar assim e não prometer ao júri texto "ao vivo".
 - [ ] Servidor a correr e `http://localhost:8000` aberto
 - [ ] Carregar em "Recomeçar demo" (ou F5) logo antes de começar: o estado vive no browser. O `reset_demo` já não é preciso para este frontend, porque o `app.js` não escreve em `memoria/diario/`.
 - [ ] Perfil intacto (Teams ligado, transcrições permitidas, check-in todos os dias). Se alguém mexeu, apagar a chave `reflexao.perfil.v2` do localStorage e recarregar.
@@ -38,10 +41,10 @@
 | 10 | 1:50–1:55 | "Quem decide é ela." Editar o texto ou o prazo de uma prioridade. | | A prioridade fica como ela escreveu e o visto verifica-se à medida que se escreve (sem prazo aparece "Falta o prazo."). |
 | 11 | 1:55–2:05 | Clicar em "Guardar semana". Descer até "Histórico" e, em "Semanas guardadas", clicar em "Semana 4" (marcada "guardada agora"). "A memória do agente é isto: um registo por semana, que se lê. Sem caixas negras." | | Aviso "Semana guardada. Fica no histórico, mais abaixo." e o botão passa a "Semana guardada". O gráfico mostra a energia 4, 3, 3, 2,8. Abre-se uma janela com a semana 4 por secções (correu bem, aprendeste, bloqueou, feedback, prioridades, para experimentar), com a prioridade editada no passo 10. **A gravação é simulada no browser**: o `app.js` não chama o backend e não escreve nada em `memoria/diario/`. Não dizer ao júri que o ficheiro foi criado em disco. |
 
-## Opcional (se houver tempo): sexta e notas sobre o GLM
+## Opcional (se houver tempo): sexta e notas sobre o Gemini
 
 - **Sexta:** no passo 7, em vez de abrir o relatório, clicar em "Avançar para sexta (simulação)". Faz mais 4 perguntas (correu bem, bloqueio, energia, e a entrega da síntese ao cliente). O aviso do relatório passa a "5 de 5" e o resumo e a energia média mudam: **ensaiar antes** e só mostrar se funcionou.
-- **GLM-5.3 da z.ai:** as mensagens do agente são escritas pelo LLM, a partir do que a aplicação lhe diz para transmitir. No relatório aparece o botão "Reescrever com o GLM". As regras de padrões e o alerta de mal-estar continuam a ser código, não LLM. Neste motor é o LLM que classifica o tema do bloqueio no passo 5, por isso o texto "já apareceu esta semana… e nas semanas 1 e 3" pode não sair igual. Confirmar no ensaio antes de o usar em público.
+- **Gemini:** as mensagens do agente são escritas pelo LLM, a partir do que a aplicação lhe diz para transmitir. No relatório aparece o botão "Reescrever com o Gemini". As regras de padrões e o alerta de mal-estar continuam a ser código, não LLM. Neste motor é o LLM que classifica o tema do bloqueio no passo 5, por isso o texto "já apareceu esta semana… e nas semanas 1 e 3" pode não sair igual. Confirmar no ensaio antes de o usar em público.
 - O resumo mensal (P2) não existe neste frontend.
 
 ## Cenário de segurança: perguntas do júri ou clip de 15 segundos
@@ -67,10 +70,10 @@ Validação, se o júri pedir: na pergunta 1, o botão "d" dá um erro a vermelh
 
 ## Plano B: a API falha ou fica lenta
 
-- Se o GLM não responder em 25 segundos ou der erro, a app mostra sozinha a resposta de reserva, com uma nota no chat ("Esta mensagem é a resposta de reserva."), e a conversa segue. No relatório, se "Reescrever com o GLM" falhar, aparece "Não foi possível reescrever o relatório agora. Mantém-se a versão anterior."
-- Para ver o que o agente fez por trás (contexto, histórico, padrões, gravações, erros do GLM com o código), abrir a consola do browser (F12) e escrever `reflexaoDiag()`. Nada disto aparece no ecrã.
+- Se o Gemini não responder em 25 segundos ou der erro, a app mostra sozinha a resposta de reserva (sem rótulo "· Gemini" e sem nota de erro) e deixa de tentar o Gemini até recarregar a página. A conversa segue. No relatório, se "Reescrever com o Gemini" falhar, aparece "Não foi possível reescrever o relatório agora. Mantém-se a versão anterior."
+- Para ver o que o agente fez por trás (contexto, histórico, padrões, gravações, erros do Gemini com o código), abrir a consola do browser (F12) e escrever `reflexaoDiag()`. Nada disto aparece no ecrã.
 - Para não esperar tanto: ao fim de 10 segundos, carregar em "Parar" (o botão "Enviar" muda para "Parar" enquanto o LLM escreve). Aparece a resposta de reserva e a conversa segue.
-- Se o servidor arrancar sem chave, todas as mensagens são as de reserva (sem "· GLM"): a demo corre na mesma.
+- Se o servidor arrancar sem chave, todas as mensagens são as de reserva (sem "· Gemini"): a demo corre na mesma.
 - Se o ecrã se estragar: "Recomeçar demo" (tem 10 segundos para "Desfazer") ou F5.
 - Se nada disto resolver: "Vamos ver a gravação desta mesma conversa." Passar para o separador do vídeo de backup.
 - Pedir desculpa uma vez, no máximo, e continuar o pitch ao ritmo normal.
