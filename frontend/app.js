@@ -674,7 +674,7 @@ function actionRow(x){
 }
 
 /* ───────── Bem-estar ───────── */
-const CARE = "Obrigado por me dizeres isto. Exaustão e noites sem dormir pesam muito, e merecem mais atenção do que um check-in. Deixo as perguntas de lado por hoje. Falar com alguém pode ajudar: uma pessoa de confiança, a tua chefia ou os RH, o teu médico de família, ou a linha SNS 24.";
+const CARE = "Obrigado por me dizeres isto. Exaustão e noites sem dormir pesam muito, e merecem mais atenção do que um check-in. Deixo as perguntas de lado por hoje. Falar com alguém pode ajudar: uma pessoa de confiança, a tua chefia ou os RH, o teu médico de família, ou a linha SNS 24 (808 24 24 24). Se estiveres em perigo, liga 112.";
 async function careFlow(){
   const c = S.chat;
   c.phase = "care";
@@ -689,7 +689,7 @@ async function careFlow(){
 function careCard(x){
   const c = el("div","care");
   c.innerHTML = `<h4>Apoio humano</h4>
-    <ul><li>Alguém de confiança, dentro ou fora do trabalho</li><li>A tua chefia ou os Recursos Humanos</li><li>O teu médico de família</li><li>SNS 24: <span class="num">808 24 24 24</span>, com aconselhamento psicológico</li></ul>
+    <ul><li>Alguém de confiança, dentro ou fora do trabalho</li><li>A tua chefia ou os Recursos Humanos</li><li>O teu médico de família</li><li>SNS 24: <span class="num">808 24 24 24</span>, com aconselhamento psicológico</li><li>Em perigo: <span class="num">112</span></li></ul>
     <div class="muted" style="font-size:12px">Esta parte da conversa não é usada para padrões nem fica gravada. O agente não faz diagnósticos.</div>
     <div class="row"><button type="button" class="btn">Continuar o check-in</button><button type="button" class="btn">Terminar por hoje</button></div>`;
   const [go, end] = c.querySelectorAll("button");
