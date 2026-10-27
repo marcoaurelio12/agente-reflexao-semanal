@@ -5,6 +5,10 @@
 
 ## 2026-10-27
 
+- 15:36 · frontend · Perguntas livres: um texto com "?" já não conta como resposta ao guião. Com
+  modelo, responde em 1 ou 2 frases e repete a pergunta pendente; sem modelo (Gemini sem crédito,
+  402), mostra uma linha fixa e repete a pergunta. Não grava nada nem avança. O `.env` fica no
+  Gemini; o Marco trata do crédito no AI Studio. Por testar com um modelo real.
 - 15:17 · frontend · Sem resposta do modelo, a mensagem de reserva aparece só como "Agente" (sem
   nota laranja nem "· Gemini") e a app deixa de tentar o Gemini até recarregar a página. Saiu do
   Perfil o bloco das transcrições (descrição, lista de reuniões, "Nível de acesso"). Roteiro e

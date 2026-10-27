@@ -524,19 +524,22 @@ ${mem}
 Padrões ativos (decididos por regras, não por ti):
 ${pats}`;
 }
-function directive(content){
+function directive(content, livre){
   const c = S.chat;
-  return (c.lastUser ? `Resposta de ${P.nome}: «${c.lastUser}»\n\n` : "") + `[Aplicação] Escreve a tua próxima mensagem. Transmite isto pelas tuas palavras, ajustado ao que foi dito, sem acrescentar factos: «${content}»`;
+  const resp = c.lastUser ? `Resposta de ${P.nome}: «${c.lastUser}»\n\n` : "";
+  return resp + (livre ? `[Aplicação] ${content}` : `[Aplicação] Escreve a tua próxima mensagem. Transmite isto pelas tuas palavras, ajustado ao que foi dito, sem acrescentar factos: «${content}»`);
 }
 const HIDE = ["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"];
 function liveOn(){ return S.engine === "live" && SAMPLE && !liveDisabled; }
-async function agentSay(content){
+// content = o texto do guião (também a mensagem de reserva); instrucao = o que pedir ao modelo em vez de "transmite content".
+async function agentSay(content, instrucao){
   const c = S.chat;
+  if (!instrucao) c.lastAsk = content;
   c.busy = true; renderComposer();
   if (liveOn()){
     const x = push({r:"agent", t:null, live:true});
     const ctl = new AbortController(); c.ctl = ctl; renderComposer();
-    c.liveTurns.push({role:"user", content: directive(content)});
+    c.liveTurns.push({role:"user", content: directive(instrucao || content, !!instrucao)});
     try{
       const r = await SAMPLE([{role:"user", content: rulesPrompt(c.dk)}, ...c.liveTurns.slice(-12)], {cache:false, modelTier:"quick", signal:ctl.signal,
         onText:({text}) => { x.t = text; if (x.node) { x.node.textContent = text; scrollDown(); } }});
@@ -556,7 +559,7 @@ async function agentSay(content){
     const x = push({r:"agent", t:null});
     await sleep(c.startedAt ? 480 : 0);
     x.t = content; if (x.node) x.node.textContent = content;
-    c.liveTurns.push({role:"user", content: directive(content)}, {role:"assistant", content});
+    c.liveTurns.push({role:"user", content: directive(instrucao || content, !!instrucao)}, {role:"assistant", content});
   }
   c.lastUser = null; c.busy = false; renderComposer(); renderChatHead(); scrollDown();
 }
@@ -583,6 +586,17 @@ async function startDay(dk){
   await agentSay(`Olá, ${P.nome}. Check-in de ${DAYN[dk].nome}, 2 minutos. ` + qText(dk, c.qs[0]));
   renderAll();
 }
+// Pergunta livre da pessoa ("...?"): responde-se e volta-se à pergunta pendente, sem gravar nada.
+async function answerFree(text){
+  const c = S.chat;
+  setErr(""); c.lastUser = text;
+  push({r:"user", t:text});
+  const pendente = c.lastAsk || "";
+  return agentSay(
+    "Essa pergunta está fora do check-in e, sem o modelo de linguagem, só consigo conduzir as perguntas do dia. Retomo: " + pendente,
+    `A pessoa fez uma pergunta em vez de responder. Responde-lhe primeiro em 1 ou 2 frases, só com factos do contexto ou do funcionamento da aplicação (um check-in diário de 4 perguntas; as respostas ficam só neste computador); se não souberes, di-lo. Depois repete a pergunta pendente: «${pendente}». Não a contes como resposta.`
+  );
+}
 async function onUser(text){
   const c = S.chat;
   if (!canType()) return;
@@ -591,6 +605,7 @@ async function onUser(text){
   // mal-estar dita na pergunta da energia também tem de chegar aqui, e não ser rejeitada por "não é um número".
   const alerta = bemEstar(text);
   if (alerta){ setErr(""); c.interacoes++; c.lastUser = text; push({r:"user", t:text}); return careFlow(alerta); }
+  if (/\?/.test(text)) return answerFree(text);
   const key = c.current.key, v = validate(key, text);
   if (!v.ok){
     push({r:"user", t:text, err:v.err + " Não foi gravada."});
