@@ -1,0 +1,30 @@
+# Vocabulário controlado para detetar padrões entre semanas.
+# O LLM classifica cada bloqueio, aprendizagem e prioridade com UM destes ids;
+# o código (backend/padroes.py) só conta repetições.
+# Temas neutros ("entregas", "outro") nunca contam como padrão.
+# Podem acrescentar temas, mas não mudem ids já usados em memoria/diario/.
+
+bloqueios:
+  reunioes-excessivas: Reuniões a mais ou sem agenda
+  interrupcoes: Interrupções e notificações
+  dependencia-de-outros: À espera de outras pessoas
+  prioridades-pouco-claras: Prioridades ou âmbito pouco claros
+  procrastinacao: Adiar tarefas difíceis
+  sobrecarga: Trabalho a mais para o tempo que há
+  cansaco-sono: Cansaço ou dormir mal
+  problemas-tecnicos: Problemas técnicos ou de ferramentas
+  comunicacao: Falhas de comunicação
+
+praticas: # usados em aprendizagens e prioridades
+  foco-manha: Blocos de foco
+  preparar-reunioes: Preparar reuniões com antecedência
+  pedir-ajuda-cedo: Pedir ajuda cedo
+  dizer-nao: Dizer não ou filtrar pedidos
+  planear-semana: Planear a semana
+  alinhar-expectativas: Alinhar expectativas e prazos
+  delegar: Delegar
+  pausas-energia: Pausas, sono e energia
+
+neutros:
+  entregas: Entregas do projeto
+  outro: Outro
