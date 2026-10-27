@@ -14,13 +14,13 @@ Temos 3 horas. Python + GLM-5.3 da z.ai (API compatível com OpenAI). **Não há
 ficheiros markdown (`memoria/`), que já tem 4 semanas fictícias. A demo ao vivo é a semana
 seguinte, em que o agente tem de reparar que um bloqueio se repete.
 
-| Função | O que faz | Começa por | Quem |
+| Função | O que faz | Começa por |
 |---|---|---|---|
-| **Frontend** | Ecrã do chat, cartão de resumo, painel do diário | [`frontend/README.md`](frontend/README.md) | _(nome)_ |
-| **Backend A** | Servidor, chamadas ao LLM (z.ai), fluxo da conversa | [`backend/README.md`](backend/README.md) | _(nome)_ |
-| **Backend B** | Ler/escrever o diário, deteção de padrões, filtro de segurança, testes | [`backend/README.md`](backend/README.md) | _(nome)_ |
+| **Frontend** | Ecrã do chat, cartão de resumo, painel do diário | [`frontend/README.md`](frontend/README.md) |
+| **Backend A** | Servidor, chamadas ao LLM (z.ai), fluxo da conversa | [`backend/README.md`](backend/README.md) |
+| **Backend B** | Ler/escrever o diário, deteção de padrões, filtro de segurança, testes | [`backend/README.md`](backend/README.md) |
 | **Pitch A** | História, slides, ensaios | [`pitch/README.md`](pitch/README.md) | _(nome)_ |
-| **Pitch B** | Guião da demo, afinar os prompts do agente, vídeo de backup | [`pitch/README.md`](pitch/README.md) | _(nome)_ |
+| **Pitch B** | Guião da demo, afinar os prompts do agente, vídeo de backup | [`pitch/README.md`](pitch/README.md) |
 
 1. Lê [`docs/SCOPE.md`](docs/SCOPE.md) (5 min): o que entra, o que fica de fora, o relógio.
 2. Põe o teu nome em [`TAREFAS.md`](TAREFAS.md).
