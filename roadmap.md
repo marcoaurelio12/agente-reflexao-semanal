@@ -27,9 +27,15 @@ Estas estavam no plano (MVP/P1/P2) e ficaram a caminho da linha de meta.
 Decidido no âmbito (slide de visão) e mantido: cada uma merece o seu próprio projeto.
 
 - **Login e vários utilizadores** — a demo é uma só pessoa, sem contas.
-- **Integração com Outlook/Teams** — ler a agenda real em vez da fictícia
-  (`memoria/agenda/2026-W44.md`, que o agente já lê no contexto).
-- **Transcrições de reuniões** — "em reuniões desta semana falou-se…" e atas automáticas.
+- **Integrações com apps de trabalho** — Microsoft 365 (Outlook, calendário e Teams), Google
+  Workspace (Calendar, Gmail) e Slack: ler a agenda real em vez da fictícia
+  (`memoria/agenda/2026-W44.md`, que o agente já lê no contexto), puxar os blocos de reuniões
+  da semana para a reflexão partir de factos e abrir a conversa de sexta pelo sítio onde a
+  pessoa já trabalha.
+- **Transcrições de reuniões** (Teams, Meet, atas) — "em reuniões desta semana falou-se…" e
+  atas automáticas.
+- **Ferramentas de gestão** — Jira, Trello ou Linear: cruzar as prioridades escolhidas na
+  sexta com o que se moveu nelas durante a semana.
 - **Sentiment analysis** — no protótipo a energia é 1–5 dita pela própria pessoa: é mais
   honesto do que inferir emoções; inferir fica para quando houver confiança no modelo.
 - **Boas práticas por papel** — só como sugestão opcional que a pessoa pode ignorar, nunca

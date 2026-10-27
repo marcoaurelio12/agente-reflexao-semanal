@@ -5,6 +5,8 @@
 
 ## 2026-10-27
 
+- 16:15 · pitch · `roadmap.md`: integrações alargadas a suites de trabalho (Microsoft 365,
+  Google Workspace, Slack) e ferramentas de gestão (Jira/Trello/Linear); commit e push.
 - 16:12 · pitch · Criado `roadmap.md` na raiz: as features que não chegaram ao protótipo
   (ecrã ligado à memória real, métricas no painel, resumo mensal, lembrete) separadas da
   visão deliberadamente fora de âmbito (login, Outlook/Teams, transcrições, BD, deploy, voz).
