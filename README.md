@@ -15,7 +15,7 @@ ficheiros markdown (`memoria/`), que já tem 4 semanas fictícias. A demo ao viv
 seguinte, em que o agente tem de reparar que um bloqueio se repete.
 
 | Função | O que faz | Começa por |
-|---|---|---|---|
+|---|---|---|
 | **Frontend** | Ecrã do chat, cartão de resumo, painel do diário | [`frontend/README.md`](frontend/README.md) |
 | **Backend A** | Servidor, chamadas ao LLM (z.ai), fluxo da conversa | [`backend/README.md`](backend/README.md) |
 | **Backend B** | Ler/escrever o diário, deteção de padrões, filtro de segurança, testes | [`backend/README.md`](backend/README.md) |
