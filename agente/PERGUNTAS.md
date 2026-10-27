@@ -14,6 +14,13 @@ As 4 perguntas comprimem dois modelos de prática reflexiva para caberem em 5 mi
 | Energia (1 a 5) | Sentimentos | |
 | Fecho: 3 prioridades + ajuste de hábito | Plano de ação | Now what? |
 
+## Regra: perguntas sempre abertas
+
+Uma pergunta que se responda com "sim" ou "não", ou que ofereça um menu de respostas
+("foi A ou B?"), não faz ninguém pensar. Ficam fora as começadas por "houve", "foi",
+"conseguiste", "há". Formula com "o quê", "como", "qual" ou "que".
+Única exceção: a escala de energia (1 a 5), que é sempre seguida de um "porquê" aberto.
+
 ## 0. Abertura (retoma a semana passada)
 
 - "Olá, {nome}. Na semana passada escolheste três prioridades: {p1}, {p2} e {p3}. Como correram?"
@@ -23,21 +30,20 @@ As 4 perguntas comprimem dois modelos de prática reflexiva para caberem em 5 mi
 
 - "O que correu bem esta semana?"
 - "De que momento da semana gostaste mais?"
-- Seguimento se vago: "Se tivesses de escolher uma coisa só, qual era?" ou "Houve alguma
-  conversa ou tarefa que correu melhor do que esperavas?"
+- Seguimento se vago: "Se tivesses de escolher uma coisa só, qual era?" ou "Que conversa ou
+  tarefa correu melhor do que esperavas?"
 
 ## 2. O que aprendi
 
 - "O que aprendeste esta semana, sobre o trabalho ou sobre a forma como trabalhas?"
-- "Há alguma coisa que vais passar a fazer de outra maneira?"
+- "O que vais passar a fazer de outra maneira?"
 - Seguimento se vago: "Pensa numa situação concreta desta semana: o que repetias e o que mudavas?"
 
 ## 3. O que bloqueou
 
 - "O que te travou ou te fez perder mais tempo?"
 - "Em que momento sentiste que não avançavas?"
-- Seguimento se vago: "Foi mais por causa de pessoas, de tempo ou de falta de informação?"
-  ou "Em que dia é que isso aconteceu?"
+- Seguimento se vago: "O que estava por trás disso?" ou "O que aconteceu antes disso?"
 
 ## 4. Energia
 

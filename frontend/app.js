@@ -257,16 +257,16 @@ function qText(dk, key){
     case "correu_bem":
       if (ev) return `Hoje tiveste ${ev.ref}. O que correu bem no teu dia?` + (abertas ? " Pode ser algo pequeno." : "");
       return `O que correu bem hoje? Podes pensar nas tuas responsabilidades, por exemplo ${lc1(P.resp[0]||"o teu entregável principal")}.`;
-    case "bloqueio": return 'Houve alguma coisa que te bloqueou ou atrasou hoje? Se não houve, basta dizer "não".';
+    case "bloqueio": return 'O que te bloqueou ou atrasou hoje? Se não houve nada, basta dizer "não".';
     case "energia": return "De 1 a 5, como está a tua energia hoje? E o que mais contribuiu para isso?";
     case "aprendizagem": return dk === "sex" ? "O que aprendeste esta semana, ou fizeste de forma diferente?" : "O que aprendeste hoje, ou fizeste de forma diferente?";
     case "playbook": {
       const e = (AG[dk]||[]).find(x => ["cliente","revisao","entrega"].includes(x.tipo));
       if (!e) return "O que aprendeste hoje, ou fizeste de forma diferente?";
       const st = trStatus(e);
-      if (e.tipo === "cliente") return (st && !st.lock) ? "Última pergunta. Na transcrição do workshop, o envio da síntese até terça ficou contigo, mas os outros próximos passos ficaram sem responsável. O que faltou para os fechar no fim?" : "Última pergunta. No fim do workshop, ficaram claros os próximos passos e quem fica com cada um?";
-      if (e.tipo === "revisao") return "Última pergunta. Que decisão precisavas de trazer da revisão com o manager? Conseguiste?";
-      return "Última pergunta. Alguém reviu a síntese antes de seguir para o cliente? O que mudou com isso?";
+      if (e.tipo === "cliente") return (st && !st.lock) ? "Última pergunta. Na transcrição do workshop, o envio da síntese até terça ficou contigo, mas os outros próximos passos ficaram sem responsável. O que faltou para os fechar no fim?" : "Última pergunta. Como ficaram os próximos passos no fim do workshop, quem ficou com cada um?";
+      if (e.tipo === "revisao") return "Última pergunta. Que decisão trouxeste da revisão com o manager?";
+      return "Última pergunta. O que aconteceu à síntese antes de seguir para o cliente, e o que mudou com isso?";
     }
     case "bem_check": return "Ontem e hoje a energia ficou em 2 ou menos. Como te tens sentido, para lá do trabalho?";
   }
@@ -274,11 +274,11 @@ function qText(dk, key){
 }
 function clarifText(dk, key){
   const ev = mainEvent(dk);
-  if (key === "correu_bem") return ev ? `Pensa só em ${ev.ref}: houve um momento em que algo correu como querias?` : "Consegues dar-me um momento concreto de hoje que tenha corrido como querias?";
-  if (key === "aprendizagem") return "Houve alguma tarefa que fizeste de forma diferente do habitual?";
+  if (key === "correu_bem") return ev ? `Pensa só em ${ev.ref}: que momento correu como querias?` : "Qual foi o momento concreto de hoje que correu como querias?";
+  if (key === "aprendizagem") return "O que fizeste de forma diferente do habitual?";
   if (key === "playbook") return dk === "qui" ? "Pensa só nos últimos minutos do workshop: quem ficou com cada próximo passo?" : dk === "ter" ? "O que levaste para pedir ao manager nessa revisão?" : "Quem viu a síntese antes de seguir para o cliente?";
-  if (key === "bloqueio") return "Consegues dizer qual foi a coisa que mais te atrasou hoje?";
-  return "Consegues dar-me um exemplo concreto?";
+  if (key === "bloqueio") return "Qual foi a coisa que mais te atrasou hoje?";
+  return "Em que situação concreta é que isso aconteceu?";
 }
 function buildLog(dk){
   const r = S.days[dk], L = [];
@@ -506,7 +506,7 @@ Regras fixas:
 - Não avalias, não dás nota, não diagnosticas e não reportas à chefia.
 - Usas só factos do contexto abaixo ou do que a pessoa disse. Nunca adivinhas o conteúdo de uma reunião com transcrição bloqueada.
 - Cada mensagem tua tem no máximo 3 frases curtas e exatamente uma pergunta. Sem markdown, sem listas, sem emojis.
-- ${P.estilo==="abertas" ? "A pessoa prefere perguntas mais abertas." : "A pessoa prefere perguntas curtas e diretas."}
+- ${P.estilo==="abertas" ? "A pessoa prefere perguntas mais abertas." : "A pessoa prefere perguntas curtas e diretas, mas sempre abertas: nunca de sim/não."}
 - Em cada passo a aplicação diz-te o que transmitir. Segue-a e adapta só a forma.
 
 Perfil: ${P.papel}, na função desde ${P.desde}; projeto: ${P.projeto}; manager: ${P.manager}.

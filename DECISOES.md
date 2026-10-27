@@ -28,6 +28,10 @@
    _2026-10-27 15:12: a API passou a devolver `402 Your prepayment credits are depleted` em todos
    os modelos. O Marco decidiu não pôr crédito: a demo corre com as respostas de reserva da app
    (o código continua pronto para o Gemini; basta haver créditos e reiniciar o servidor)._
+   _2026-10-27 15:52: o Marco pôs créditos no AI Studio. A mesma chave do `.env` volta a responder
+   (testado ao vivo); a demo volta a correr com o Gemini. Perguntas fechadas (sim/não ou menu de
+   respostas) ficam proibidas nos prompts e no check-in do frontend; única exceção: a escala de
+   energia 1-5, sempre seguida de um "porquê" aberto._
 3. **Sem base de dados.** A memória é um diário em markdown em `memoria/` (perfil, índice e uma
    entrada por semana), o mesmo método com que gerimos a Alinhadamente. Uma base de dados a sério
    fica para o slide de escalabilidade.

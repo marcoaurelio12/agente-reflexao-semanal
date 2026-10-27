@@ -5,6 +5,19 @@
 
 ## 2026-10-27
 
+- 16:12 · pitch · Criado `roadmap.md` na raiz: as features que não chegaram ao protótipo
+  (ecrã ligado à memória real, métricas no painel, resumo mensal, lembrete) separadas da
+  visão deliberadamente fora de âmbito (login, Outlook/Teams, transcrições, BD, deploy, voz).
+- 15:52 · LLM + agente · Gemini outra vez ao vivo: o Marco pôs créditos no AI Studio e a chave do
+  `.env` volta a responder (testado ao vivo com o TestClient: abertura, vaga, padrão e fecho OK,
+  1,4 a 3,6 s por resposta; gastámos ~12 pedidos nos testes). Perguntas fechadas eliminadas:
+  regra nova "perguntas sempre abertas" em `PERGUNTAS.md` (exceção: escala de energia 1-5),
+  regra no `AGENTE.md` (nada de sim/não nem menus), corrigidas as fixas do check-in no
+  `frontend/app.js` (bloqueio, clarificações, playbook) e o roteiro atualizado. Reforçado no
+  `AGENTE.md`: padrão mencionado → tem de ser assinalado com datas antes de avançar (na 1.ª
+  passagem ao vivo falhava; na 2.ª, "as semanas de 5 e de 19 de outubro" ✓); proibidos elogios
+  ("ótimo avanço", "excelente"). pytest 30 verdes em mock; `reset_demo` corrido. Atenção às
+  quotas do plano pré-pago nos ensaios (um percurso = 10 a 15 pedidos).
 - 15:36 · frontend · Perguntas livres: um texto com "?" já não conta como resposta ao guião. Com
   modelo, responde em 1 ou 2 frases e repete a pergunta pendente; sem modelo (Gemini sem crédito,
   402), mostra uma linha fixa e repete a pergunta. Não grava nada nem avança. O `.env` fica no
