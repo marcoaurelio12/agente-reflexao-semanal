@@ -31,10 +31,10 @@ Ficheiros: `frontend/` · Detalhe: [`frontend/README.md`](frontend/README.md)
 Ficheiros: `backend/app.py`, `conversa.py`, `llm.py`, `requirements.txt` · Detalhe: [`backend/README.md`](backend/README.md)
 
 - [x] A1 Servidor a correr + `llm.py` com modo mock (sem chave), até T+0:40
-- [ ] A2 Montar o contexto: `agente/` + `memoria/` + padrões + agenda
-- [ ] A3 `POST /api/chat`: abertura, perguntas, seguimento se vago, marcador de fecho
-- [ ] A4 `POST /api/fechar` (JSON de `agente/FECHO.md`) + `POST /api/guardar`
-- [ ] A5 `GET /api/memoria`
+- [x] A2 Montar o contexto: `agente/` + `memoria/` + padrões + agenda
+- [x] A3 `POST /api/chat`: abertura, perguntas, seguimento se vago, marcador de fecho
+- [x] A4 `POST /api/fechar` (JSON de `agente/FECHO.md`) + `POST /api/guardar`
+- [x] A5 `GET /api/memoria`
 - [ ] A6 (P2) `POST /api/resumo-mensal`
 
 **Feito =** os testes de aceitação 1 a 3 do `docs/SCOPE.md` passam com a chave real.
@@ -43,11 +43,11 @@ Ficheiros: `backend/app.py`, `conversa.py`, `llm.py`, `requirements.txt` · Deta
 
 Ficheiros: `backend/memoria.py`, `padroes.py`, `seguranca.py`, `reset_demo.py`, `tests/` · Detalhe: [`backend/README.md`](backend/README.md)
 
-- [ ] B1 `memoria.py`: ler e escrever o diário markdown (frontmatter + corpo) e o `INDEX.md`, até T+0:40
-- [ ] B2 `padroes.py`: as 4 regras de padrões + métricas
-- [ ] B3 `seguranca.py`: filtro de mal-estar sério + deteção de respostas vagas
+- [x] B1 `memoria.py`: ler e escrever o diário markdown (frontmatter + corpo) e o `INDEX.md`, até T+0:40
+- [x] B2 `padroes.py`: as 4 regras de padrões + métricas
+- [x] B3 `seguranca.py`: filtro de mal-estar sério + deteção de respostas vagas
 - [ ] B4 `tests/`: os 3 cenários do desafio, com `python -m pytest`
-- [ ] B5 `reset_demo.py`: apagar a W44 antes de cada ensaio
+- [x] B5 `reset_demo.py`: apagar a W44 antes de cada ensaio
 - [ ] B6 A partir de T+1:15, ajudar o Backend A na integração
 
 **Feito =** `detetar()` sobre W41 a W43 devolve os 4 padrões do frontmatter de `memoria/diario/2026-W43.md`; testes verdes.

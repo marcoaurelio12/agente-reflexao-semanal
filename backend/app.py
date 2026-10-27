@@ -3,15 +3,22 @@
 Correr a partir da raiz do repo:  python -m uvicorn backend.app:app --reload
 Depois abrir http://localhost:8000
 """
+import logging
+from datetime import date
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from backend import conversa, llm, memoria, padroes, seguranca
+
 RAIZ = Path(__file__).resolve().parent.parent
+NOTA_VAGA = "A última resposta foi vaga: faz UMA pergunta de seguimento concreta; não assumas nada."
 
 app = FastAPI(title="Agente de Reflexão Semanal")
+log = logging.getLogger("uvicorn.error")
+log.info("LLM: %s", "modo mock (sem OPENAI_API_KEY)" if llm.modo_mock() else "z.ai")
 
 
 class Mensagem(BaseModel):
@@ -27,28 +34,98 @@ class PedidoGuardar(BaseModel):
     semana: dict
 
 
+def _erro_llm(e: Exception) -> HTTPException:
+    log.exception("Falha no LLM")
+    return HTTPException(502, f"O LLM não respondeu: {e}")
+
+
 @app.post("/api/chat")
 def chat(pedido: PedidoChat):
     """Abertura (mensagens vazias), perguntas, seguimento se vago, marcador de fecho."""
-    raise HTTPException(501, "A3: por implementar")
+    mensagens = [m.model_dump() for m in pedido.mensagens]
+    ultima = next((m["content"] for m in reversed(mensagens) if m["role"] == "user"), None)
+    if ultima:
+        alerta = seguranca.verificar(ultima)
+        if alerta:
+            return {"resposta": alerta["resposta"], "pronto_para_fechar": False, "alerta_seguranca": True}
+    nota = NOTA_VAGA if ultima and seguranca.e_vaga(ultima) else None
+    try:
+        texto = llm.responder(conversa.montar_contexto(nota), mensagens)
+    except Exception as e:
+        raise _erro_llm(e)
+    pronto = conversa.MARCADOR_FECHO in texto
+    texto = texto.replace(conversa.MARCADOR_FECHO, "").strip()
+    return {"resposta": texto, "pronto_para_fechar": pronto, "alerta_seguranca": False}
 
 
 @app.post("/api/fechar")
 def fechar(pedido: PedidoChat):
     """JSON da semana (FECHO.md) + padrões. Ainda não guarda."""
-    raise HTTPException(501, "A4: por implementar")
+    mensagens = [m.model_dump() for m in pedido.mensagens]
+    try:
+        dados = llm.extrair_json(conversa.montar_contexto_fecho(),
+                                 [{"role": "user", "content": conversa.transcricao(mensagens)}])
+    except Exception as e:
+        raise _erro_llm(e)
+
+    temas_validos = memoria.nomes_temas()
+    for campo in ("aprendizagens", "bloqueios", "prioridades"):
+        dados[campo] = [
+            {"texto": str(i.get("texto", "")),
+             "tema": i.get("tema") if i.get("tema") in temas_validos else "outro"}
+            for i in (dados.get(campo) or []) if isinstance(i, dict)
+        ]
+    sid, periodo = memoria.semana_atual()
+    semana = {
+        "semana": sid,
+        "periodo": periodo,
+        "registado_em": date.today().isoformat(),
+        "energia": dados.get("energia"),
+        "energia_nota": dados.get("energia_nota") or "",
+        "prioridades_anteriores": dados.get("prioridades_anteriores") or [],
+        "correu_bem": dados.get("correu_bem") or [],
+        "aprendizagens": dados["aprendizagens"],
+        "bloqueios": dados["bloqueios"],
+        "resumo": dados.get("resumo") or "",
+        "prioridades": dados["prioridades"],
+        "ajuste_habito": dados.get("ajuste_habito") or "",
+    }
+    metas = [s["meta"] for s in conversa.semanas_anteriores()] + [memoria.meta_de(semana)]
+    semana["padroes"] = padroes.detetar(metas)
+    return {"semana": semana}
 
 
 @app.post("/api/guardar")
 def guardar(pedido: PedidoGuardar):
     """Escreve memoria/diario/<semana>.md e a linha no INDEX.md."""
-    raise HTTPException(501, "A4: por implementar")
+    try:
+        return {"ficheiro": memoria.guardar_semana(pedido.semana)}
+    except (ValueError, KeyError, TypeError) as e:
+        raise HTTPException(400, f"Semana inválida: {e}")
 
 
 @app.get("/api/memoria")
-def memoria():
+def ver_memoria():
     """Contexto, semanas, padrões e métricas para o painel."""
-    raise HTTPException(501, "A5: por implementar")
+    semanas = memoria.listar_semanas(ultimas=0)
+    metas = [s["meta"] for s in semanas]
+    return {
+        "contexto": memoria.carregar_contexto(),
+        "semanas": [
+            {
+                "semana": s["meta"]["semana"],
+                "periodo": s["meta"].get("periodo"),
+                "energia": s["meta"].get("energia"),
+                "resumo": s["resumo"],
+                "prioridades": s["prioridades"],
+                "padroes": s["meta"].get("padroes") or [],
+                "markdown": s["corpo"],
+            }
+            for s in semanas
+        ],
+        "padroes": padroes.detetar(metas),
+        "metricas": padroes.metricas(metas),
+    }
 
 
 @app.post("/api/resumo-mensal")

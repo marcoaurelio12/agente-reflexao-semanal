@@ -60,10 +60,13 @@ def _cliente():
 
 
 def _completar(system: str, mensagens: list[dict], **extra) -> str:
+    conversa = [{"role": m["role"], "content": m["content"]} for m in mensagens]
+    if not any(m["role"] == "user" for m in conversa):
+        # Abertura: algumas APIs recusam pedidos só com a mensagem de sistema.
+        conversa.append({"role": "user", "content": "Olá."})
     pedido = {
         "model": os.getenv("OPENAI_MODEL", "").strip() or MODELO_POR_OMISSAO,
-        "messages": [{"role": "system", "content": system}]
-        + [{"role": m["role"], "content": m["content"]} for m in mensagens],
+        "messages": [{"role": "system", "content": system}] + conversa,
         **extra,
     }
     esforco = os.getenv("OPENAI_REASONING_EFFORT", "").strip()
