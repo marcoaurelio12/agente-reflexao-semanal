@@ -48,21 +48,20 @@
 
 Carregar em "Recomeçar demo" e, na primeira pergunta, colar:
 
-`Ando exausta e não consigo dormir há semanas.`
+`Estou em baixo há semanas e não vejo saída.`
 
 🎯 **Mal-estar sério.** A frase aparece na conversa e o agente responde com um texto fixo: agradece, diz que isto merece mais atenção do que um check-in, deixa as perguntas de lado e sugere falar com alguém. Aparece o cartão "Apoio humano": pessoa de confiança, chefia ou RH, médico de família e SNS 24 (808 24 24 24, com aconselhamento psicológico). O cartão diz que esta parte não é usada para padrões nem fica gravada, e que o agente não faz diagnósticos. A caixa de texto fica bloqueada ("Escolhe uma das opções acima.") até clicar em:
 
 - "Terminar por hoje": o agente diz "Fica por aqui. Não gravei nada deste check-in. Cuida de ti." e o dia fica "interrompido", sem nada gravado.
 - "Continuar o check-in": retoma a pergunta onde estava ("Combinado, sem pressa.").
 
-Dizer ao júri: "Isto não depende do modelo: o filtro corre no código, antes de qualquer chamada ao LLM." É uma lista de palavras-chave (exaust-, esgotad-, "não consigo dormir", "sem esperança", desesper-, "não aguento", burnout), não uma análise de sentido.
+Dizer ao júri: "Isto não depende do modelo: o filtro corre no código, antes de qualquer chamada ao LLM." É uma lista de expressões específicas ("não vejo saída", "em baixo há semanas", "quero morrer"…), não uma análise de sentido. É a mesma lista de `backend/seguranca.py` e `agente/SEGURANCA.md`, e um teste (`tests/test_seguranca.py`) falha se o `app.js` se afastar dela.
 
-> ⚠️ **A lista de palavras mudou face ao roteiro anterior.**
-> - "Não aguento mais" **dispara** o alerta. Nunca usar "Não aguento mais reuniões sem agenda" como contraexemplo.
-> - "Estou em baixo há semanas e não vejo saída." **não** dispara nada neste frontend. Não usar.
-> - O contraexemplo que funciona é a frase do passo 5 ("…uma reunião sem agenda"): fala de reuniões e passa sem alerta.
-> - O cartão indica o SNS 24 (808 24 24 24) e o 112 em caso de perigo.
-> - Não colar a frase de mal-estar na pergunta da energia: aí é rejeitada como resposta inválida (não é um número de 1 a 5) antes de chegar ao filtro.
+> - **Contraexemplo para o júri:** "Não aguento mais reuniões sem agenda." **não** dispara o alerta (é uma semana pesada, não mal-estar). Colar na pergunta 2 e a conversa segue para a energia.
+> - **Nível urgente:** "quero morrer" (ou "pôr fim a tudo", "magoar-me"…) mostra o cartão com o 112 em primeiro lugar e **só** o botão "Terminar por hoje": o agente pára e não há "Continuar o check-in".
+> - O filtro corre em **todas** as respostas, incluindo a da energia: a frase de mal-estar já não é rejeitada como "não é um número".
+> - O cartão indica sempre o SNS 24 (808 24 24 24) e o 112 em caso de perigo.
+> - Frases como "Ando exausta" ou "não consigo dormir" **já não** disparam o alerta (não estão na lista do backend). Não usar como cenário.
 
 Validação, se o júri pedir: na pergunta 1, o botão "d" dá um erro a vermelho e a resposta não é gravada. Na energia, "7" dá "fora da escala".
 

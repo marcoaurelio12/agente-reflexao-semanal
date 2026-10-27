@@ -11,6 +11,12 @@ from backend.app import app
 
 
 @pytest.fixture(autouse=True)
+def modo_mock(monkeypatch):
+    """Sem chave, mesmo que o .env tenha uma: os testes nunca vão à rede nem gastam quota do GLM."""
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+
+
+@pytest.fixture(autouse=True)
 def estado_canonico():
     """Diário com W40 a W43 antes e depois dos testes (igual ao ensaio da demo)."""
     reset_demo.reset()

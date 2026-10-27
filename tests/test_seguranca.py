@@ -1,5 +1,19 @@
 """B4: filtro de mal-estar sério (antes do LLM) e falsos positivos de uma semana pesada."""
+import json
+import re
+from pathlib import Path
+
 from backend import seguranca
+
+APP_JS = Path(__file__).resolve().parent.parent / "frontend" / "app.js"
+
+
+def test_frontend_usa_as_mesmas_expressoes_do_backend():
+    """O frontend tem uma cópia da lista (o filtro corre no browser); não pode divergir do backend."""
+    m = re.search(r"const BEM_ESTAR = (\{.*?\});", APP_JS.read_text(encoding="utf-8"), re.S)
+    assert m, "frontend/app.js perdeu a constante BEM_ESTAR"
+    frontend = json.loads(m.group(1))
+    assert frontend == {"urgente": seguranca.URGENTE, "apoio": seguranca.APOIO}
 
 
 def test_mal_estar_apoio():

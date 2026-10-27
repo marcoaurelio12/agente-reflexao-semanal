@@ -5,6 +5,15 @@
 
 ## 2026-10-27
 
+- 15:10 · frontend + Backend B · Filtro de mal-estar do frontend corrigido: `app.js` usa as mesmas
+  expressões de `backend/seguranca.py` (constante `BEM_ESTAR`) e corre em todas as respostas, antes
+  da validação (já apanha a frase de mal-estar na pergunta da energia). Antes falhava "quero
+  morrer", "não vejo saída" e "em baixo há semanas", e disparava em "não aguento mais reuniões sem
+  agenda" e "exausta". Dois níveis: apoio (como antes, com o 112 no texto) e urgente (112 primeiro,
+  só "Terminar por hoje"). Chips de teste e roteiro atualizados (a frase de teste passa a ser "Estou
+  em baixo há semanas e não vejo saída."). `tests/test_seguranca.py` falha se a lista do `app.js`
+  divergir da do backend; `conftest.py` força o modo mock (30 testes verdes mesmo com chave no
+  `.env`). Verificado no browser: apoio, urgente na energia e o contraexemplo.
 - 14:50 · frontend · F7: o chat deixa de mostrar `get_day_context()`, `get_history()`,
   `find_patterns()`, `wellbeing_check()` e `save_day()`; as chamadas continuam e vão para um
   registo interno (`reflexaoDiag()` na consola, com os códigos de erro do GLM). Saem do ecrã
@@ -57,9 +66,6 @@
 - **A conta da z.ai da chave no `.env` está sem saldo** (14:45: `429 - Insufficient balance or no
   resource package. Please recharge.`). Enquanto não for carregada, todas as mensagens do agente
   são as de reserva e o "Reescrever com o GLM" falha. Carregar e ensaiar antes da demo.
-- Com a chave no `.env`, `python -m pytest` vai à rede e falham 5 testes de `test_chat.py` (o 429
-  acima). Em modo mock passam os 29: `OPENAI_API_KEY= python -m pytest`. O `conftest.py` devia forçar
-  o mock sozinho (Backend B).
 - Pôr a chave do Coding Plan no `.env` (só na máquina da demo, não se partilha) e correr o
   roteiro uma vez com o GLM; depois `python -m backend.reset_demo`.
 - Ainda dizem "OpenAI": `frontend/README.md` (texto da faixa de privacidade), `memoria/README.md`,
