@@ -150,7 +150,7 @@ function freshState(opt){
     else days[d.k] = {estado:"futuro", log:[]};
   });
   return {
-    engine: S ? S.engine : "guiao",
+    engine: "live",
     weeks: opt.noHistory ? [] : clone(BASE_WEEKS), days, today:"qui", viewDay:"qui",
     chat:null, saved:false, newFile:false, report:null, reacoes:{},
     prevStatus: opt.noHistory ? {} : {devolucoes:"nao-avancou", workshop_cliente:"feito", feedback_modelo:"em-parte"}
@@ -452,7 +452,7 @@ function chipsFor(){
 }
 function renderComposer(){
   const box = $("#chips"), list = chipsFor(), ok = canType(), c = S.chat;
-  box.innerHTML = list.length ? '<span class="lbl">Guião:</span>' : "";
+  box.innerHTML = list.length ? '<span class="lbl">Sugestões:</span>' : "";
   list.forEach(o => { const b = el("button", "chip " + o.cls, o.t); b.type = "button"; b.onclick = () => onUser(o.t); box.appendChild(b); });
   const ta = $("#msg"), send = $("#sendBtn");
   ta.disabled = !ok;
@@ -507,10 +507,10 @@ function directive(content){
 }
 const HIDE = ["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"];
 function errCopy(code){
-  if (HIDE.includes(code)) return "O GLM ao vivo não está disponível nesta vista. A conversa continua com o guião.";
-  if (code === "rate_limited") return "Demasiados pedidos ao GLM por agora. Esta mensagem veio do guião.";
-  if (code === "session_expired") return "A sessão do GLM expirou. Esta mensagem veio do guião.";
-  return "O GLM não respondeu a tempo. Esta mensagem veio do guião (plano B).";
+  if (HIDE.includes(code)) return "O GLM não está disponível. A conversa continua com as respostas de reserva.";
+  if (code === "rate_limited") return "Demasiados pedidos ao GLM por agora. Esta mensagem é a resposta de reserva.";
+  if (code === "session_expired") return "A sessão do GLM expirou. Esta mensagem é a resposta de reserva.";
+  return "O GLM não respondeu a tempo. Esta mensagem é a resposta de reserva.";
 }
 function liveOn(){ return S.engine === "live" && SAMPLE && !liveDisabled; }
 async function agentSay(content){
@@ -1203,8 +1203,9 @@ function boot(){
   startFirstDay();
 }
 
-boot();
-if (window.claude && typeof window.claude.use === "function"){
-  window.claude.use("sample").then(s => { SAMPLE = s || null; renderEngine(); }).catch(() => { SAMPLE = null; renderEngine(); });
-}
+// Só arranca depois de saber se o GLM está disponível, para a 1.ª mensagem já vir dele.
+const ligarGLM = (window.claude && typeof window.claude.use === "function")
+  ? window.claude.use("sample").then(s => { SAMPLE = s || null; }).catch(() => { SAMPLE = null; })
+  : Promise.resolve();
+ligarGLM.then(() => { boot(); renderEngine(); });
 })();

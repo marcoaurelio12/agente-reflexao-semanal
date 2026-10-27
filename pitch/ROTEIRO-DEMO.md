@@ -2,15 +2,18 @@
 
 > Duração-alvo: **cerca de 2 minutos**. A Marta é fictícia. 🎯 = teste pedido pelo desafio.
 > Quem conduz a demo fala para o júri; as respostas da Marta **colam-se**, não se escrevem ao vivo.
-> Em cada pergunta, por cima da caixa de texto, há botões "Guião:" com estas mesmas frases.
+> Em cada pergunta, por cima da caixa de texto, há botões "Sugestões:" com estas mesmas frases.
 > Clicar no botão envia exatamente o mesmo texto que colar.
-> Este roteiro foi escrito a ler o `app.js`, não a correr a app. **Ensaiar uma vez de ponta a ponta.**
+> As mensagens do agente são escritas pelo GLM-5.3 (só há este modo), por isso as frases variam
+> um pouco de ensaio para ensaio; o que o agente pergunta e os padrões são sempre os mesmos.
+> **Ensaiar uma vez de ponta a ponta com a chave.**
 
 ## Checklist antes da demo
 
-- [ ] Chave da z.ai no `.env` (o modo live usa o GLM-5.3; sem chave fica o guião). Testar 5 minutos antes: o botão "GLM ao vivo" só fica ativo se houver chave.
+- [ ] Chave da z.ai no `.env` e servidor reiniciado depois de a pôr. Testar 5 minutos antes: as
+      mensagens do agente têm de aparecer como "AGENTE · GLM". Sem chave aparecem só como
+      "AGENTE" (respostas de reserva).
 - [ ] Servidor a correr e `http://localhost:8000` aberto
-- [ ] Motor em **Guião** (canto superior direito; é o valor por omissão). É o que o roteiro assume e funciona sempre.
 - [ ] Carregar em "Recomeçar demo" (ou F5) logo antes de começar: o estado vive no browser. O `reset_demo` já não é preciso para este frontend, porque o `app.js` não escreve em `memoria/diario/`.
 - [ ] Perfil intacto (Teams ligado, transcrições permitidas, check-in todos os dias). Se alguém mexeu, apagar a chave `reflexao.perfil.v2` do localStorage e recarregar.
 - [ ] Ecrã de abertura confere: "Check-in de quinta, 22 out", "Pergunta 1 de 4", pergunta sobre o workshop com o cliente
@@ -35,10 +38,10 @@
 | 10 | 1:50–1:55 | "Quem decide é ela." Editar o texto ou o prazo de uma prioridade. | | A prioridade fica como ela escreveu e o visto verifica-se à medida que se escreve (sem prazo aparece "Falta o prazo."). |
 | 11 | 1:55–2:05 | Clicar em "Aprovar e gravar". Descer até "Histórico" e clicar em `semana-04.yaml` (marcado "agora"). "A memória do agente é isto: um ficheiro por semana, que se lê. Sem caixas negras." | | Aviso "Gravado em data/marta/semana-04.yaml." e o botão passa a "Gravado". O gráfico mostra a energia 4, 3, 3, 2,8. Abre-se uma janela com o YAML da semana 4. **A gravação é simulada no browser**: o `app.js` não chama o backend e não escreve nada em `memoria/diario/`. Não dizer ao júri que o ficheiro foi criado em disco. |
 
-## Opcional (se houver tempo): sexta e motor ao vivo
+## Opcional (se houver tempo): sexta e notas sobre o GLM
 
 - **Sexta:** no passo 7, em vez de abrir o relatório, clicar em "Avançar para sexta (simulação)". Faz mais 4 perguntas (correu bem, bloqueio, energia, e a entrega da síntese ao cliente). O aviso do relatório passa a "5 de 5" e o resumo e a energia média mudam: **ensaiar antes** e só mostrar se funcionou.
-- **Motor "GLM ao vivo"** (o modelo é o GLM-5.3 da z.ai): as mensagens do agente passam a ser escritas pelo LLM, a partir do que a aplicação lhe diz para transmitir. No relatório aparece o botão "Reescrever com o GLM". As regras de padrões e o alerta de mal-estar continuam a ser código, não LLM. Neste motor é o LLM que classifica o tema do bloqueio no passo 5, por isso o texto "já apareceu esta semana… e nas semanas 1 e 3" pode não sair igual. Confirmar no ensaio antes de o usar em público.
+- **GLM-5.3 da z.ai:** as mensagens do agente são escritas pelo LLM, a partir do que a aplicação lhe diz para transmitir. No relatório aparece o botão "Reescrever com o GLM". As regras de padrões e o alerta de mal-estar continuam a ser código, não LLM. Neste motor é o LLM que classifica o tema do bloqueio no passo 5, por isso o texto "já apareceu esta semana… e nas semanas 1 e 3" pode não sair igual. Confirmar no ensaio antes de o usar em público.
 - O resumo mensal (P2) não existe neste frontend.
 
 ## Cenário de segurança: perguntas do júri ou clip de 15 segundos
@@ -52,22 +55,22 @@ Carregar em "Recomeçar demo" e, na primeira pergunta, colar:
 - "Terminar por hoje": o agente diz "Fica por aqui. Não gravei nada deste check-in. Cuida de ti." e o dia fica "interrompido", sem nada gravado.
 - "Continuar o check-in": retoma a pergunta onde estava ("Combinado, sem pressa.").
 
-Dizer ao júri: "Isto não depende do modelo: o filtro corre no código, antes de qualquer chamada ao LLM, nos dois motores." É uma lista de palavras-chave (exaust-, esgotad-, "não consigo dormir", "sem esperança", desesper-, "não aguento", burnout), não uma análise de sentido.
+Dizer ao júri: "Isto não depende do modelo: o filtro corre no código, antes de qualquer chamada ao LLM." É uma lista de palavras-chave (exaust-, esgotad-, "não consigo dormir", "sem esperança", desesper-, "não aguento", burnout), não uma análise de sentido.
 
 > ⚠️ **A lista de palavras mudou face ao roteiro anterior.**
 > - "Não aguento mais" **dispara** o alerta. Nunca usar "Não aguento mais reuniões sem agenda" como contraexemplo.
 > - "Estou em baixo há semanas e não vejo saída." **não** dispara nada neste frontend. Não usar.
 > - O contraexemplo que funciona é a frase do passo 5 ("…uma reunião sem agenda"): fala de reuniões e passa sem alerta.
-> - O cartão não menciona o 112, só o SNS 24. Se o júri perguntar, dizer que o 112 não está no ecrã.
+> - O cartão indica o SNS 24 (808 24 24 24) e o 112 em caso de perigo.
 > - Não colar a frase de mal-estar na pergunta da energia: aí é rejeitada como resposta inválida (não é um número de 1 a 5) antes de chegar ao filtro.
 
 Validação, se o júri pedir: na pergunta 1, o botão "d" dá um erro a vermelho e a resposta não é gravada. Na energia, "7" dá "fora da escala".
 
 ## Plano B: a API falha ou fica lenta
 
-- O guião não usa a API e responde sempre. Se o modo ao vivo estiver ligado e algo correr mal, mudar para "Guião" no canto superior direito. A conversa continua na pergunta em que estava.
-- O código **não tem tempo-limite**. Esperar no máximo 10 segundos por uma resposta ao vivo; depois carregar em "Parar" (o botão "Enviar" muda para "Parar" enquanto o LLM escreve). A mensagem é substituída pela do guião e a conversa segue.
-- Se a chamada falhar, a mensagem do guião aparece sozinha com uma nota no chat (ex.: "Esta mensagem veio do guião (plano B)."). Se o servidor responder que o modo ao vivo não está disponível, a app volta ao guião sozinha.
+- Se o GLM não responder em 25 segundos ou der erro, a app mostra sozinha a resposta de reserva, com uma nota no chat ("Esta mensagem é a resposta de reserva."), e a conversa segue.
+- Para não esperar tanto: ao fim de 10 segundos, carregar em "Parar" (o botão "Enviar" muda para "Parar" enquanto o LLM escreve). Aparece a resposta de reserva e a conversa segue.
+- Se o servidor arrancar sem chave, todas as mensagens são as de reserva (sem "· GLM"): a demo corre na mesma.
 - Se o ecrã se estragar: "Recomeçar demo" (tem 10 segundos para "Desfazer") ou F5.
 - Se nada disto resolver: "Vamos ver a gravação desta mesma conversa." Passar para o separador do vídeo de backup.
 - Pedir desculpa uma vez, no máximo, e continuar o pitch ao ritmo normal.
