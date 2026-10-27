@@ -4,8 +4,15 @@
 
 1. **Stack:** Python 3.11 + FastAPI no backend; HTML/CSS/JS sem build no frontend, servido pelo
    mesmo servidor (sem CORS, um só comando para correr).
-2. **LLM:** OpenAI, com o SDK oficial. O modelo vem de `OPENAI_MODEL` no `.env`. Sem chave, o
-   backend corre em modo mock, para o frontend trabalhar desde o minuto 1.
+2. **LLM:** GLM-5.3 da z.ai, pelo endpoint do GLM Coding Plan
+   (`https://api.z.ai/api/coding/paas/v4`, compatível com OpenAI), com o SDK oficial `openai`.
+   Chave, URL, modelo e esforço de raciocínio vêm do `.env` (`OPENAI_API_KEY`, `OPENAI_BASE_URL`,
+   `OPENAI_MODEL`, `OPENAI_REASONING_EFFORT`). Sem chave, o backend corre em modo mock, para o
+   frontend trabalhar desde o minuto 1.
+   _2026-10-27 13:51, Marco: era OpenAI. Risco aceite: a z.ai só autoriza o Coding Plan dentro de
+   ferramentas de código suportadas, e o uso a partir de uma app pode dar limites ou congelar a
+   conta; partilhar a chave com a equipa também conta como infração. Plano B: mudar
+   `OPENAI_BASE_URL` e a chave para a API geral da z.ai ou para a OpenAI, sem mexer no código._
 3. **Sem base de dados.** A memória é um diário em markdown em `memoria/` (perfil, índice e uma
    entrada por semana), o mesmo método com que gerimos a Alinhadamente. Uma base de dados a sério
    fica para o slide de escalabilidade.

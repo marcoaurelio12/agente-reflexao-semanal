@@ -30,7 +30,7 @@ Ficheiros: `frontend/` · Detalhe: [`frontend/README.md`](frontend/README.md)
 
 Ficheiros: `backend/app.py`, `conversa.py`, `llm.py`, `requirements.txt` · Detalhe: [`backend/README.md`](backend/README.md)
 
-- [ ] A1 Servidor a correr + `llm.py` com modo mock (sem chave), até T+0:40
+- [x] A1 Servidor a correr + `llm.py` com modo mock (sem chave), até T+0:40
 - [ ] A2 Montar o contexto: `agente/` + `memoria/` + padrões + agenda
 - [ ] A3 `POST /api/chat`: abertura, perguntas, seguimento se vago, marcador de fecho
 - [ ] A4 `POST /api/fechar` (JSON de `agente/FECHO.md`) + `POST /api/guardar`

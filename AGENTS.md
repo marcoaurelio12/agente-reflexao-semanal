@@ -6,7 +6,7 @@ Lido por Claude Code, Cursor, Codex e afins. Lê isto antes de mexer em código.
 
 Agente de reflexão semanal para um hackathon de 3 horas. Uma conversa de 5 minutos → resumo,
 3 prioridades, padrões entre semanas e um ajuste de hábito. Memória num diário em markdown.
-Python (FastAPI) + OpenAI + HTML/JS. Dados 100% fictícios.
+Python (FastAPI) + GLM-5.3 da z.ai (SDK openai) + HTML/JS. Dados 100% fictícios.
 
 ## Leitura obrigatória, por esta ordem
 

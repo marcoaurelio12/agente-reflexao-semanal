@@ -10,14 +10,14 @@ um resumo, 3 prioridades, os padrões que se repetem e um pequeno ajuste de háb
 
 ## Ler primeiro: o que há a fazer e quem faz o quê
 
-Temos 3 horas. Python + API da OpenAI. **Não há base de dados:** a memória é um diário em
+Temos 3 horas. Python + GLM-5.3 da z.ai (API compatível com OpenAI). **Não há base de dados:** a memória é um diário em
 ficheiros markdown (`memoria/`), que já tem 3 semanas fictícias. A demo é a 4.ª semana, em que o
 agente tem de reparar que um bloqueio se repete.
 
 | Função | O que faz | Começa por | Quem |
 |---|---|---|---|
 | **Frontend** | Ecrã do chat, cartão de resumo, painel do diário | [`frontend/README.md`](frontend/README.md) | _(nome)_ |
-| **Backend A** | Servidor, chamadas à OpenAI, fluxo da conversa | [`backend/README.md`](backend/README.md) | _(nome)_ |
+| **Backend A** | Servidor, chamadas ao LLM (z.ai), fluxo da conversa | [`backend/README.md`](backend/README.md) | _(nome)_ |
 | **Backend B** | Ler/escrever o diário, deteção de padrões, filtro de segurança, testes | [`backend/README.md`](backend/README.md) | _(nome)_ |
 | **Pitch A** | História, slides, ensaios | [`pitch/README.md`](pitch/README.md) | _(nome)_ |
 | **Pitch B** | Guião da demo, afinar os prompts do agente, vídeo de backup | [`pitch/README.md`](pitch/README.md) | _(nome)_ |
@@ -33,7 +33,7 @@ agente tem de reparar que um bloqueio se repete.
 ## Como funciona
 
 ```
-conversa no browser ──▶ servidor Python ──▶ OpenAI
+conversa no browser ──▶ servidor Python ──▶ z.ai (GLM-5.3)
                            │   ▲
              lê e escreve  ▼   │  agente/  (instruções, perguntas, segurança: markdown)
                          memoria/ (perfil + índice + diário: markdown)
@@ -59,7 +59,7 @@ Abre http://localhost:8000. Sem `OPENAI_API_KEY` no `.env`, o backend corre em m
 ## Onde ficam os dados
 
 Em ficheiros markdown em `memoria/`, no computador onde corre o servidor. Guarda-se o resumo
-estruturado da semana, não a transcrição. O texto da conversa é enviado à API da OpenAI para
+estruturado da semana, não a transcrição. O texto da conversa é enviado à API da z.ai (GLM) para
 gerar as respostas. Detalhes em [`memoria/README.md`](memoria/README.md).
 
 ## Cuidados

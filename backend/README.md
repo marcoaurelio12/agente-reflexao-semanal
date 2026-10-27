@@ -80,16 +80,14 @@ mudar as assinaturas. NÃO mexas em backend/memoria.py, padroes.py, seguranca.py
 nem em tests/ — são do Backend B. Enquanto essas funções derem NotImplementedError, usa
 valores temporários dentro do teu código, nunca nos ficheiros dele.
 
-1. llm.py
-   - Lê OPENAI_API_KEY e OPENAI_MODEL do .env (python-dotenv). Usa o SDK oficial openai.
+1. llm.py: JÁ FEITO (A1). Usa o SDK openai contra a z.ai (OPENAI_API_KEY, OPENAI_BASE_URL,
+   OPENAI_MODEL e OPENAI_REASONING_EFFORT no .env). Só mexe nele se for preciso.
    - responder(system, mensagens) -> str.
-   - extrair_json(system, mensagens) -> dict: usa response_format JSON; se o JSON vier
-     inválido, tenta 1 vez mais; se voltar a falhar, levanta um erro claro.
-   - Modo mock quando não há chave: respostas pré-escritas que seguem o fluxo
-     abertura -> 4 perguntas (correu bem, aprendi, bloqueou, energia 1 a 5) -> mensagem final
-     que acaba com <<FECHAR>> na última linha. Escolhe a resposta pelo número de mensagens do
-     utilizador. extrair_json em mock devolve um JSON de fecho fixo e válido no formato de
-     agente/FECHO.md. Serve para o frontend trabalhar sem chave.
+   - extrair_json(system, mensagens) -> dict: response_format JSON; se o JSON vier inválido,
+     tenta 1 vez mais; se voltar a falhar, levanta RuntimeError.
+   - Sem chave, modo mock: a conversa da W44 de frontend/mock.js, escolhida pelo número de
+     mensagens do utilizador; a última acaba com <<FECHAR>> na última linha. extrair_json
+     devolve um JSON de fecho fixo no formato de agente/FECHO.md.
 2. conversa.py
    - montar_contexto(nota_extra) junta as partes pela ordem de docs/ARQUITETURA.md §Contexto.
    - montar_contexto_fecho() segue a mesma secção.
