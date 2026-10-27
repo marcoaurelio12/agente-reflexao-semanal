@@ -5,6 +5,14 @@
 
 ## 2026-10-27
 
+- 14:50 · frontend · F7: o chat deixa de mostrar `get_day_context()`, `get_history()`,
+  `find_patterns()`, `wellbeing_check()` e `save_day()`; as chamadas continuam e vão para um
+  registo interno (`reflexaoDiag()` na consola, com os códigos de erro do GLM). Saem do ecrã
+  `save_week → data/marta/semana-04.yaml`, os nomes `semana-0N.yaml` e a nota yaml/Pydantic. O botão
+  passa a "Guardar semana", o histórico mostra "Semanas guardadas" e a semana abre legível (não
+  YAML). Erro no "Reescrever com o GLM" passa a ter aviso (antes era engolido). Roteiro atualizado.
+  Testado no browser: check-in de quinta, padrão, relatório, editar e guardar, perfil, apagar,
+  mal-estar; sem erros de JS; pytest 29 verdes em modo mock.
 - 14:35 · integração · Frontend novo (ex-artifact do Claude) ligado ao GLM: `frontend/ponte.js`
   faz de `window.claude.use("sample")` e chama `/api/llm`. Sem chave fica no guião. Rótulos
   "Claude" → "GLM". Roteiro reescrito para o fluxo novo (Marta, check-ins diários); pytest: 29
@@ -46,6 +54,12 @@
 
 ## Pontas soltas
 
+- **A conta da z.ai da chave no `.env` está sem saldo** (14:45: `429 - Insufficient balance or no
+  resource package. Please recharge.`). Enquanto não for carregada, todas as mensagens do agente
+  são as de reserva e o "Reescrever com o GLM" falha. Carregar e ensaiar antes da demo.
+- Com a chave no `.env`, `python -m pytest` vai à rede e falham 5 testes de `test_chat.py` (o 429
+  acima). Em modo mock passam os 29: `OPENAI_API_KEY= python -m pytest`. O `conftest.py` devia forçar
+  o mock sozinho (Backend B).
 - Pôr a chave do Coding Plan no `.env` (só na máquina da demo, não se partilha) e correr o
   roteiro uma vez com o GLM; depois `python -m backend.reset_demo`.
 - Ainda dizem "OpenAI": `frontend/README.md` (texto da faixa de privacidade), `memoria/README.md`,

@@ -97,7 +97,21 @@ const DEF_PROFILE = {
   teams:true, transcricoes:true, sync:"22 out, 08:00"
 };
 const PKEY = "reflexao.perfil.v2";
-const WELL = /exaust|esgotad|n[ãa]o (consigo )?dormi|n[ãa]o durmo|sem dormir|sem esperan|desesper|n[ãa]o aguento|burn.?out/i;
+// Mesmas expressões de backend/seguranca.py e agente/SEGURANCA.md (minúsculas, sem acentos). São
+// específicas de propósito: "não aguento mais reuniões" é uma semana pesada, não um alerta.
+// tests/test_seguranca.py confere que esta lista é igual à do backend (JSON válido, sem vírgulas finais).
+const BEM_ESTAR = {
+  "urgente": ["quero morrer", "nao quero viver", "nao vale a pena viver", "por fim a tudo",
+              "acabar com tudo", "magoar-me", "fazer-me mal", "suicid"],
+  "apoio": ["nao vejo saida", "sem saida nenhuma", "em baixo ha semanas", "ataque de panico",
+            "ataques de panico", "choro todos os dias", "nao durmo ha dias", "sinto-me vazia",
+            "sinto-me vazio", "estou a ir abaixo"]
+};
+/** "urgente" | "apoio" | null. Corre em todas as mensagens da pessoa, antes de qualquer validação. */
+function bemEstar(texto){
+  const t = String(texto || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().split(/\s+/).filter(Boolean).join(" ");
+  return ["urgente", "apoio"].find(nivel => BEM_ESTAR[nivel].some(e => t.includes(e))) || null;
+}
 const NEG = /^(n[ãa]o|nada|nenhum|nenhuma|zero)\b/i;
 
 /* ───────── Perfil ───────── */
@@ -139,6 +153,18 @@ function mainEvent(dk){
   const evs = (AG[dk]||[]).slice().sort((a,b) => TIPO_ORDER.indexOf(a.tipo) - TIPO_ORDER.indexOf(b.tipo));
   return evs[0] || null;
 }
+
+/* ───────── Diagnóstico interno ─────────
+   As ferramentas (contexto do dia, histórico, padrões, gravação, bem-estar) registam-se aqui e na
+   consola (nível debug), nunca no ecrã. Para ver na consola do browser: reflexaoDiag() */
+const DIAG = [];
+function trace(fn, res){
+  const x = {hora:new Date().toISOString(), dia:S && S.chat ? S.chat.dk : null, fn, res};
+  DIAG.push(x); if (DIAG.length > 300) DIAG.shift();
+  try{ console.debug("[reflexao]", fn, res); }catch(e){}
+  return x;
+}
+window.reflexaoDiag = () => DIAG.slice();
 
 /* ───────── Estado ───────── */
 let S, SAMPLE = null, liveDisabled = false;
@@ -256,14 +282,12 @@ function clarifText(dk, key){
 }
 function buildLog(dk){
   const r = S.days[dk], L = [];
-  L.push({r:"tool", fn:"get_day_context", res:"contexto do dia"});
   const qs = r.aprendizagem ? ["correu_bem","bloqueio","energia","aprendizagem"] : ["correu_bem","bloqueio","energia","playbook"];
   qs.forEach(q => {
     L.push({r:"agent", t:qText(dk, q)});
     const a = q==="energia" ? String(r.energia) + (r.energia_nota ? ". " + r.energia_nota : "") : q==="bloqueio" ? (r.bloqueio.nenhum ? "Não." : r.bloqueio.texto) : (r[q] && r[q].texto);
     if (a) L.push({r:"user", t:a});
   });
-  L.push({r:"tool", fn:"save_day", res:`${dk} registado`});
   return L;
 }
 
@@ -376,7 +400,6 @@ function drawEntry(x){
     if (x.err) row.append(el("div","errline", x.err));
     x.node = b; log.appendChild(row); return row;
   }
-  if (x.r === "tool"){ const r = el("div","tool"); r.append(el("span","fn", x.fn + "()"), el("span", null, x.res)); log.appendChild(r); return r; }
   if (x.r === "note"){ const r = el("div","note", x.t); log.appendChild(r); return r; }
   if (x.r === "care"){ const r = careCard(x); log.appendChild(r); return r; }
   if (x.r === "action"){ const r = actionRow(x); log.appendChild(r); return r; }
@@ -441,8 +464,8 @@ function chipsFor(){
     return dk==="qui" ? [T("O workshop correu muito bem: validámos 4 dos 6 processos."), T("Normal."), T("d","test")]
                       : [T("A síntese das entrevistas seguiu para o cliente a horas."), T("Normal."), T("d","test")];
   }
-  if (k === "bloqueio") return dk==="qui" ? [T("Perdi a manhã com pedidos internos e mais uma reunião sem agenda."), T("Não, hoje não."), T("Ando exausta e não consigo dormir há semanas.","test")]
-                                         : [T("Esperei pela revisão do Rui até à última hora."), T("Não."), T("Ando exausta e não consigo dormir há semanas.","test")];
+  if (k === "bloqueio") return dk==="qui" ? [T("Perdi a manhã com pedidos internos e mais uma reunião sem agenda."), T("Não, hoje não."), T("Estou em baixo há semanas e não vejo saída.","test")]
+                                         : [T("Esperei pela revisão do Rui até à última hora."), T("Não."), T("Estou em baixo há semanas e não vejo saída.","test")];
   if (k === "energia") return [T(dk==="qui" ? "3, o workshop correu bem mas foi intenso." : "3, dia calmo.")].concat(["1","2","3","4","5"].map(n => ({t:n, cls:"num"})), [T("d","test"), T("7","test")]);
   if (k === "playbook") return clar ? [T("Só a síntese ficou atribuída; o resto ficou no ar.")]
     : dk==="qui" ? [T("Ficaram os próximos passos, mas não os responsáveis de cada um.")] : dk==="ter" ? [T("Queria a decisão sobre os pressupostos. Não consegui.")] : [T("Sim, uma colega reviu e apanhou dois erros nos números.")];
@@ -510,7 +533,9 @@ function errCopy(code){
   if (HIDE.includes(code)) return "O GLM não está disponível. A conversa continua com as respostas de reserva.";
   if (code === "rate_limited") return "Demasiados pedidos ao GLM por agora. Esta mensagem é a resposta de reserva.";
   if (code === "session_expired") return "A sessão do GLM expirou. Esta mensagem é a resposta de reserva.";
-  return "O GLM não respondeu a tempo. Esta mensagem é a resposta de reserva.";
+  if (code === "timeout") return "O GLM não respondeu a tempo. Esta mensagem é a resposta de reserva.";
+  if (code === "network") return "Sem ligação ao servidor. Esta mensagem é a resposta de reserva.";
+  return "O GLM não conseguiu responder. Esta mensagem é a resposta de reserva.";
 }
 function liveOn(){ return S.engine === "live" && SAMPLE && !liveDisabled; }
 async function agentSay(content){
@@ -526,6 +551,7 @@ async function agentSay(content){
       x.t = r.text; c.liveTurns.push({role:"assistant", content:r.text});
     }catch(e){
       x.t = content; c.liveTurns.push({role:"assistant", content});
+      trace("llm_chat", "erro: " + ((e && (e.code || e.message)) || "desconhecido"));
       if (e && e.code !== "cancelled"){ if (HIDE.includes(e.code)){ liveDisabled = true; S.engine = "guiao"; renderEngine(); } push({r:"note", t:errCopy(e.code)}); }
     }
     if (x.node) x.node.textContent = x.t;
@@ -543,7 +569,7 @@ async function liveClassify(text){
   try{
     const r = await SAMPLE.json(`Classifica este bloqueio de trabalho num destes temas. Responde só com JSON {"tema":"<chave>"}.\nTemas: ${Object.entries(TEMAS).map(([k,v])=>k+" = "+v).join("; ")}.\nBloqueio: «${text}»`, {modelTier:"quick"});
     return (r && TEMAS[r.tema]) ? r.tema : classify(text, "tempo");
-  }catch(e){ return classify(text, "tempo"); }
+  }catch(e){ trace("llm_classificar", "erro: " + ((e && (e.code || e.message)) || "desconhecido") + " · classificação local"); return classify(text, "tempo"); }
 }
 
 /* ───────── Fluxo diário ───────── */
@@ -555,8 +581,8 @@ async function startDay(dk){
   const c = S.chat, L = lvl(), evs = P.teams ? (AG[dk]||[]) : [];
   const locked = evs.filter(e => { const s = trStatus(e); return s && s.lock; }).length;
   const open = evs.filter(e => { const s = trStatus(e); return s && !s.lock; }).length;
-  push({r:"tool", fn:"get_day_context", res: P.teams ? `nível ${L} · ${evs.length} evento${evs.length===1?"":"s"} do Teams${open?` · ${open} transcrição disponível`:""}${locked?` · ${locked} bloqueada${locked>1?"s":""}`:""}` : "nível 0 · só a conversa e as responsabilidades"});
-  push({r:"tool", fn:"get_history", res:`${doneDays().length} check-ins esta semana · 3 semanas em memória`});
+  trace("get_day_context", P.teams ? `nível ${L} · ${evs.length} evento${evs.length===1?"":"s"} do Teams${open?` · ${open} transcrição disponível`:""}${locked?` · ${locked} bloqueada${locked>1?"s":""}`:""}` : "nível 0 · só a conversa e as responsabilidades");
+  trace("get_history", `${doneDays().length} check-ins esta semana · ${S.weeks.length} semanas em memória`);
   c.current = {key:c.qs[0], clarif:false};
   await agentSay(`Olá, ${P.nome}. Check-in de ${DAYN[dk].nome}, 2 minutos. ` + qText(dk, c.qs[0]));
   renderAll();
@@ -564,8 +590,12 @@ async function startDay(dk){
 async function onUser(text){
   const c = S.chat;
   if (!canType()) return;
-  const key = c.current.key, v = validate(key, text);
   if (!c.startedAt) c.startedAt = Date.now();
+  // O filtro corre antes de validar a resposta (como no backend, antes do LLM): uma frase de
+  // mal-estar dita na pergunta da energia também tem de chegar aqui, e não ser rejeitada por "não é um número".
+  const alerta = bemEstar(text);
+  if (alerta){ setErr(""); c.interacoes++; c.lastUser = text; push({r:"user", t:text}); return careFlow(alerta); }
+  const key = c.current.key, v = validate(key, text);
   if (!v.ok){
     push({r:"user", t:text, err:v.err + " Não foi gravada."});
     setErr(v.err);
@@ -574,7 +604,6 @@ async function onUser(text){
   setErr("");
   c.interacoes++; c.lastUser = text;
   push({r:"user", t:text});
-  if (WELL.test(text)) return careFlow();
   const r = S.days[c.dk];
   if (key === "bem_check"){ advanceQ(); return askCurrent("Obrigado por partilhares. "); }
   if (key === "energia"){
@@ -585,7 +614,7 @@ async function onUser(text){
     const pe = prevDay ? S.days[prevDay.k].energia : null;
     renderAll();
     if (r.energia <= 2 && pe != null && pe <= 2){
-      push({r:"tool", fn:"wellbeing_check", res:"energia em 2 ou menos dois dias seguidos · perguntar com cuidado"});
+      trace("wellbeing_check", "energia em 2 ou menos dois dias seguidos · perguntar com cuidado");
       c.current = {key:"bem_check", clarif:false};
       return agentSay(`Registado: ${r.energia}. ` + qText(c.dk, "bem_check"));
     }
@@ -604,7 +633,7 @@ async function onUser(text){
     if (r.aprendizagem){
       renderAll();
       const cons = findPatterns().find(p=>p.id==="aprendizagem").itens.find(i => i.chave === r.aprendizagem.chave && i.semanas.includes(4) && i.semanas.length >= 2);
-      if (cons){ push({r:"tool", fn:"find_patterns", res:`aprendizagem consolidada · semanas ${cons.semanas.join(", ")}`}); pre = `Isto já aparece nas semanas ${cons.semanas.join(", ")}: parece estar a tornar-se um hábito teu. `; }
+      if (cons){ trace("find_patterns", `aprendizagem consolidada · semanas ${cons.semanas.join(", ")}`); pre = `Isto já aparece nas semanas ${cons.semanas.join(", ")}: parece estar a tornar-se um hábito teu. `; }
     }
   }
   if (key === "playbook") r.playbook = {texto:text};
@@ -620,12 +649,12 @@ async function onUser(text){
         const outrosDias = doneDays().filter(d => d.k!==c.dk && S.days[d.k].bloqueio && S.days[d.k].bloqueio.tema === tema).map(d => d.nome);
         const semanas = S.weeks.filter(w => w.bloqueios.some(b => b.tema === tema)).map(w => w.semana);
         if (outrosDias.length || semanas.length){
-          push({r:"tool", fn:"find_patterns", res:`bloqueio recorrente · ${TEMAS[tema].toLowerCase()}`});
+          trace("find_patterns", `bloqueio recorrente · ${TEMAS[tema].toLowerCase()}`);
           const partes = [];
           if (outrosDias.length) partes.push(`esta semana (${outrosDias.join(" e ")})`);
           if (semanas.length) partes.push(`nas semanas ${semanas.join(" e ")}`);
           pre = `Isto já apareceu ${partes.join(" e ")}. Guardo-o para o relatório de sexta, onde proponho um ajuste. `;
-        } else push({r:"tool", fn:"find_patterns", res:`tema: ${TEMAS[tema].toLowerCase()} · sem recorrência`});
+        } else trace("find_patterns", `tema: ${TEMAS[tema].toLowerCase()} · sem recorrência`);
       }
     }
   }
@@ -649,9 +678,9 @@ async function finishDay(){
   const c = S.chat, r = S.days[c.dk];
   c.endedAt = Date.now();
   const s = Math.floor((c.endedAt - (c.startedAt||c.endedAt))/1000); r.dur = `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
-  push({r:"tool", fn:"wellbeing_check", res:"sem sinais de alerta"});
+  trace("wellbeing_check", "sem sinais de alerta");
   r.estado = "feito";
-  push({r:"tool", fn:"save_day", res:`data/marta/semana-04.yaml · dia ${c.dk}`});
+  trace("save_day", `semana 4 · dia ${c.dk}`);
   c.phase = "feito";
   S.report = null;
   const isLast = c.dk === "sex" || !DAYS.some(d => DAYS.indexOf(d) > DAYS.findIndex(x=>x.k===c.dk) && P.dias.includes(d.k));
@@ -674,30 +703,39 @@ function actionRow(x){
 }
 
 /* ───────── Bem-estar ───────── */
-const CARE = "Obrigado por me dizeres isto. Exaustão e noites sem dormir pesam muito, e merecem mais atenção do que um check-in. Deixo as perguntas de lado por hoje. Falar com alguém pode ajudar: uma pessoa de confiança, a tua chefia ou os RH, o teu médico de família, ou a linha SNS 24 (808 24 24 24). Se estiveres em perigo, liga 112.";
-async function careFlow(){
-  const c = S.chat;
+// Respostas fixas, adaptadas de agente/SEGURANCA.md ao check-in de 2 minutos. No nível urgente o agente
+// pára: não há "Continuar o check-in" (SEGURANCA.md: "Vou parar a reflexão por aqui").
+const CARE = {
+  apoio: "Obrigado por me dizeres isto. O que descreves pesa muito e merece mais atenção do que um check-in. Deixo as perguntas de lado por hoje. Falar com alguém pode ajudar: uma pessoa de confiança, a tua chefia ou os RH, o teu médico de família, ou a linha SNS 24 (808 24 24 24). Se estiveres em perigo, liga 112.",
+  urgente: "Obrigado por me dizeres. O que descreves é sério e não tens de passar por isto sem ajuda. Se estás em perigo agora, liga 112. Também podes ligar para o SNS 24 (808 24 24 24) e pedir aconselhamento psicológico, ou falar já com alguém de confiança. Vou parar o check-in por aqui."
+};
+async function careFlow(nivel){
+  const c = S.chat, texto = CARE[nivel] || CARE.apoio;
   c.phase = "care";
   // a mensagem de mal-estar não fica no registo usado para padrões
-  push({r:"tool", fn:"wellbeing_check", res:"sinais de alerta · encaminhar para apoio humano"});
+  trace("wellbeing_check", `sinais de alerta (${nivel}) · encaminhar para apoio humano`);
   c.busy = true; renderComposer();
-  const x = push({r:"agent", t:null}); await sleep(450); x.t = CARE; if (x.node) x.node.textContent = CARE;
+  const x = push({r:"agent", t:null}); await sleep(450); x.t = texto; if (x.node) x.node.textContent = texto;
   c.busy = false;
-  push({r:"care"});
+  push({r:"care", nivel});
   renderAll();
 }
 function careCard(x){
-  const c = el("div","care");
+  const c = el("div","care"), urgente = x.nivel === "urgente";
+  const lis = ['<li>Alguém de confiança, dentro ou fora do trabalho</li>', '<li>A tua chefia ou os Recursos Humanos</li>', '<li>O teu médico de família</li>',
+    '<li>SNS 24: <span class="num">808 24 24 24</span>, com aconselhamento psicológico</li>', '<li>Em perigo: <span class="num">112</span></li>'];
+  if (urgente) lis.unshift(lis.pop());
   c.innerHTML = `<h4>Apoio humano</h4>
-    <ul><li>Alguém de confiança, dentro ou fora do trabalho</li><li>A tua chefia ou os Recursos Humanos</li><li>O teu médico de família</li><li>SNS 24: <span class="num">808 24 24 24</span>, com aconselhamento psicológico</li><li>Em perigo: <span class="num">112</span></li></ul>
+    <ul>${lis.join("")}</ul>
     <div class="muted" style="font-size:12px">Esta parte da conversa não é usada para padrões nem fica gravada. O agente não faz diagnósticos.</div>
-    <div class="row"><button type="button" class="btn">Continuar o check-in</button><button type="button" class="btn">Terminar por hoje</button></div>`;
-  const [go, end] = c.querySelectorAll("button");
+    <div class="row">${urgente ? "" : '<button type="button" class="btn">Continuar o check-in</button>'}<button type="button" class="btn">Terminar por hoje</button></div>`;
+  const botoes = c.querySelectorAll("button"), end = botoes[botoes.length - 1], go = urgente ? null : botoes[0];
+  const off = () => { if (go) go.disabled = true; end.disabled = true; };
   const done = S.chat && S.chat.phase !== "care";
-  if (done || x.used){ go.disabled = end.disabled = true; }
-  go.onclick = async () => { x.used = true; go.disabled = end.disabled = true; S.chat.phase = "conversa"; S.chat.lastUser = null; await askCurrent("Combinado, sem pressa. "); };
+  if (done || x.used) off();
+  if (go) go.onclick = async () => { x.used = true; off(); S.chat.phase = "conversa"; S.chat.lastUser = null; await askCurrent("Combinado, sem pressa. "); };
   end.onclick = async () => {
-    x.used = true; go.disabled = end.disabled = true;
+    x.used = true; off();
     const ch = S.chat, r = S.days[ch.dk];
     ch.phase = "feito"; ch.endedAt = Date.now(); r.estado = "interrompido";
     ["correu_bem","bloqueio","aprendizagem","playbook"].forEach(k => delete r[k]); r.energia = null;
@@ -711,11 +749,12 @@ function careCard(x){
 
 /* ───────── Relatório semanal ───────── */
 function concrete(t, prazo){
+  if (!(t||"").trim()) return {ok:false, txt:"Por preencher."};
   const w = (t||"").trim().split(/\s+/)[0] || "";
   if (!/(ar|er|ir|or|ôr)$/i.test(w)) return {ok:false, txt:"Começa por um verbo (ex.: enviar, pedir, reservar)."};
   if (!(prazo||"").trim()) return {ok:false, txt:"Falta o prazo."};
-  if ((t||"").trim().split(/\s+/).length < 3) return {ok:false, txt:"Diz qual é o entregável."};
-  return {ok:true, txt:"Verbo, entregável e prazo."};
+  if ((t||"").trim().split(/\s+/).length < 3) return {ok:false, txt:"Diz o que vais entregar."};
+  return {ok:true, txt:"Concreta e com prazo"};
 }
 function topBloqueio(){
   const cnt = {}, w = w4Derived();
@@ -744,16 +783,23 @@ function scriptedReport(){
 }
 async function liveReport(btn){
   if (!liveOn()) return;
+  if (S.report) delete S.report.liveErr;
   btn.disabled = true; btn.textContent = "O GLM está a escrever…";
   const dias = doneDays().map(x => { const r = S.days[x.k]; return `${x.Nome}: energia ${r.energia}; correu bem: ${r.correu_bem?.texto||"-"}; bloqueio: ${r.bloqueio?.nenhum?"nenhum":(r.bloqueio?.texto||"-")}; aprendizagem: ${r.aprendizagem?.texto||"-"}; reunião/entrega: ${r.playbook?.texto||"-"}`; }).join("\n");
   const pats = patternLines().map(p => "- " + p.txt).join("\n") || "- nenhum";
+  let falhou = true;
   try{
     const r = await SAMPLE.json(`${rulesPrompt("sex")}\n\nCheck-ins da semana 4:\n${dias}\n\nPadrões (já decididos por regras):\n${pats}\n\nEscreve o relatório semanal. Responde só com JSON:\n{"resumo":"3 a 4 frases, impessoal","prioridades":[{"texto":"verbo no infinitivo + entregável","prazo":"ex.: até terça"},{"texto":"…","prazo":"…"},{"texto":"…","prazo":"…"}],"ajuste":"um ajuste pequeno de hábito ou método, para experimentar na próxima semana, numa frase que começa por um verbo no infinitivo"}\nUsa só factos dos check-ins, da agenda e das responsabilidades. Exatamente 3 prioridades.`, {modelTier:"default"});
     if (r && typeof r.resumo === "string" && Array.isArray(r.prioridades) && r.prioridades.length){
       S.report = {resumo:r.resumo, ajuste:String(r.ajuste||"").replace(/^experimenta[:,]?\s*/i,""), testar:true, fonte:"claude",
         prioridades: r.prioridades.slice(0,3).map((p,i)=>({id:"p"+(i+1), texto:String(p.texto||""), prazo:String(p.prazo||"")}))};
-    }
-  }catch(e){ if (e && HIDE.includes(e.code)){ liveDisabled = true; S.engine = "guiao"; renderEngine(); } }
+      falhou = false;
+    } else trace("llm_relatorio", "resposta sem o formato esperado");
+  }catch(e){
+    trace("llm_relatorio", "erro: " + ((e && (e.code || e.message)) || "desconhecido"));
+    if (e && HIDE.includes(e.code)){ liveDisabled = true; S.engine = "guiao"; renderEngine(); }
+  }
+  if (falhou && S.report) S.report.liveErr = "Não foi possível reescrever o relatório agora. Mantém-se a versão anterior.";
   renderReport();
 }
 function patternLines(){
@@ -831,7 +877,8 @@ function renderReport(){
   const fb = feedbackItems();
   const w3 = S.weeks.find(x => x.semana === 3), prev = w3 ? w3.prioridades : [];
   const reflex = doneDays().filter(d => S.days[d.k].playbook).map(d => ({dia:d.k, texto:S.days[d.k].playbook.texto}));
-  const banner = saved ? '<div class="banner ok">Gravado em data/marta/semana-04.yaml.</div>'
+  const banner = saved ? '<div class="banner ok">Semana guardada. Fica no histórico, mais abaixo.</div>'
+    : R.liveErr ? `<div class="banner err" role="alert">${esc(R.liveErr)}</div>`
     : R.stale ? '<div class="banner"><span>O perfil mudou depois de editares este relatório.</span><button type="button" class="btn small" id="rStale">Atualizar e perder as edições</button></div>'
     : (n < exp) ? `<div class="banner"><span>${n} de ${exp} check-ins feitos. O relatório atualiza quando registares os restantes.</span></div>` : "";
   const box = $("#reportBox");
@@ -870,10 +917,10 @@ function renderReport(){
     prev.map(p => { const v = (saved ? p.estado : S.prevStatus[p.id]) || "sem-info";
       return `<div class="statrow" data-id="${p.id}"><span>${esc(p.texto)} <span class="muted">${esc(p.prazo)}</span></span><span class="mini" role="group" aria-label="Como ficou: ${esc(p.texto)}">${Object.entries(ESTADOS).map(([k,l]) => `<button type="button" data-v="${k}" aria-pressed="${k===v}"${dis}>${l}</button>`).join("")}</span></div>`; }).join("")
   }</div></section>` : ""}
-  <section class="rcard"><header><h3>3 prioridades para a semana 5</h3><span class="hint">verbo + o quê + quando</span></header>
-    ${R.prioridades.map((p,i) => { const c = concrete(p.texto, p.prazo); return `<div class="prow" data-i="${i}"><span class="k">${i+1}</span><input type="text" id="rP${i}" aria-label="Prioridade ${i+1}" value="${esc(p.texto)}"${dis}><input type="text" class="prazo" id="rPz${i}" aria-label="Prazo da prioridade ${i+1}" value="${esc(p.prazo)}"${dis}><span class="chk ${c.ok?"ok":""}">${c.ok ? "✓ " : ""}${c.txt}</span></div>`; }).join("")}
-    <div class="saverow"><button type="button" class="btn primary" id="rApprove"${dis}>${saved ? "Gravado" : "Aprovar e gravar"}</button><span class="muted mono" style="font-size:12px">save_week → data/marta/semana-04.yaml</span></div>
-    <div class="ferr" id="eReport"></div>
+  <section class="rcard"><header><h3>3 prioridades para a semana 5</h3><span class="hint">uma ação concreta e até quando</span></header>
+    ${R.prioridades.map((p,i) => { const c = concrete(p.texto, p.prazo); return `<div class="prow" data-i="${i}"><span class="k">${i+1}</span><input type="text" id="rP${i}" aria-label="Prioridade ${i+1}" placeholder="Ex.: Enviar a síntese ao cliente" value="${esc(p.texto)}"${dis}><input type="text" class="prazo" id="rPz${i}" aria-label="Prazo da prioridade ${i+1}" placeholder="Ex.: até terça" value="${esc(p.prazo)}"${dis}><span class="chk ${c.ok?"ok":""}">${c.ok ? "✓ " : ""}${c.txt}</span></div>`; }).join("")}
+    <div class="saverow"><button type="button" class="btn primary" id="rApprove"${dis}>${saved ? "Semana guardada" : "Guardar semana"}</button>${saved ? "" : '<span class="muted" style="font-size:12px">Guarda o resumo, o feedback e as prioridades.</span>'}</div>
+    <div class="ferr" id="eReport" role="alert"></div>
   </section>`;
 
   const edited = () => { R.edited = true; R.confirmRegen = false; };
@@ -932,6 +979,7 @@ function approve(){
     energia:w.energia
   };
   S.weeks.push(w4); S.saved = true; S.newFile = true;
+  trace("save_week", `semana 4 · ${prios.length} prioridades · ${w4.check_ins} check-ins`);
   renderAll(); renderReport();
 }
 
@@ -950,7 +998,7 @@ function renderHistory(){
   const W = evalWeeks(), cnt = {};
   W.forEach(w => new Set([...(w.bloqueios||[]), ...(w.aprendizagens||[]), ...(w.correu_bem||[])].map(x => x.tema).filter(Boolean)).forEach(t => cnt[t] = (cnt[t]||0) + 1));
   $("#themes").innerHTML = Object.entries(cnt).sort((a,b) => b[1]-a[1]).slice(0,4).map(([t,c]) => `<div class="trow"><span>${esc(TEMAS[t])}</span><span class="bar"><i style="width:${c/4*100}%"></i></span><span class="ct">${c}</span></div>`).join("") || '<div class="muted">Sem temas.</div>';
-  $("#files").innerHTML = S.weeks.map(w => `<button type="button" class="file${w.semana===4 && S.newFile ? " new" : ""}" data-week="${w.semana}"><span>semana-0${w.semana}.yaml</span><span>${w.semana===4 ? "agora" : "semana " + w.semana}</span></button>`).join("") || '<div class="muted">Sem ficheiros.</div>';
+  $("#files").innerHTML = S.weeks.map(w => `<button type="button" class="file${w.semana===4 && S.newFile ? " new" : ""}" data-week="${w.semana}"><span>Semana ${w.semana}</span><span>${w.semana===4 && S.newFile ? "guardada agora" : esc(periodoCurto(w.periodo))}</span></button>`).join("") || '<div class="muted">Ainda não há semanas guardadas.</div>';
 }
 
 /* ───────── YAML ───────── */
@@ -973,18 +1021,62 @@ function toYaml(o, ind){
 function yamlHtml(y){
   return esc(y).split("\n").map(l => l.replace(/^(\s*-?\s*)([a-z_0-9]+)(:)/, '$1<span class="k">$2</span>$3').replace(/(&quot;.*&quot;)$/, '<span class="s">$1</span>').replace(/: (-?[\d.]+|true|false|null)$/, ': <span class="n">$1</span>')).join("\n");
 }
-let currentYaml = "";
-function openYaml(name, obj, foot){
-  currentYaml = toYaml(obj);
-  $("#fileName").textContent = name;
-  $("#fileBody").innerHTML = yamlHtml(currentYaml);
-  $("#fileFoot").textContent = foot;
+let currentCopy = "";
+function openDialog(title, html, copyText, foot){
+  currentCopy = copyText;
+  $("#fileName").textContent = title;
+  $("#fileBody").innerHTML = html;
+  $("#fileFoot").textContent = foot || "";
+  $("#fileFoot").hidden = !foot;
   $("#copyBtn").textContent = "Copiar";
   const d = $("#fileDlg"); if (d.showModal) d.showModal(); else d.setAttribute("open","");
 }
+function openYaml(title, obj, foot){
+  const y = toYaml(obj);
+  openDialog(title, `<pre>${yamlHtml(y)}</pre>`, y, foot);
+}
+
+/* ───────── Ver uma semana guardada ───────── */
+const MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+function periodoCurto(p){
+  const m = String(p||"").match(/(\d{4})-(\d{2})-(\d{2}) a (\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return p || "";
+  return `${+m[3]}${m[2]===m[5] ? "" : " " + MESES[+m[2]-1]} a ${+m[6]} ${MESES[+m[5]-1]}`;
+}
+const nomeDia = k => DAYN[k] ? DAYN[k].nome : k;
+const estadoPrio = e => e ? (ESTADOS[e] || e) : "em aberto";
+function weekHtml(w){
+  const dia = x => x.dia ? ` <span class="muted">· ${esc(nomeDia(x.dia))}</span>` : "";
+  const lst = (a, f) => a && a.length ? `<ul>${a.map(f).join("")}</ul>` : '<p class="muted">Nada registado.</p>';
+  const sec = (t, body) => `<section><h4>${t}</h4>${body}</section>`;
+  const meta = [w.energia != null ? `Energia média: ${num(w.energia)} de 5` : "", w.check_ins ? `${w.check_ins} check-ins` : ""].filter(Boolean).join(" · ");
+  let h = (w.resumo ? `<p class="wk-res">${esc(w.resumo)}</p>` : "") + (meta ? `<div class="wk-meta">${meta}</div>` : "");
+  h += sec("Correu bem", lst(w.correu_bem, x => `<li>${esc(x.texto)}${dia(x)}</li>`));
+  h += sec("Aprendeste", lst(w.aprendizagens, x => `<li>${esc(x.texto)}${dia(x)}</li>`));
+  h += sec("Bloqueou", lst(w.bloqueios, x => `<li>${esc(x.texto)}${dia(x)}</li>`));
+  if (w.feedback && w.feedback.length) h += sec("Feedback", lst(w.feedback, x => `<li>${esc(x.observacao)}${x.reacao ? ` <span class="muted">· ${esc(x.reacao)}${x.nota ? ": " + esc(x.nota) : ""}</span>` : ""}</li>`));
+  h += sec("Prioridades", lst(w.prioridades, p => `<li class="wk-p"><span>${esc(p.texto)} <span class="muted">${esc(p.prazo || "")}</span></span><span class="state">${esc(estadoPrio(p.estado))}</span></li>`));
+  const a = w.ajuste_habito;
+  if (a && a.sugestao) h += sec("Para experimentar", `<p>${esc(a.sugestao)} <span class="muted">${a.testar ? "· escolhido para testar" : "· não escolhido para testar"}</span></p>`);
+  return `<div class="wk">${h}</div>`;
+}
+function weekText(w){
+  const L = [`Semana ${w.semana} · ${periodoCurto(w.periodo)}`];
+  const dia = x => x.dia ? ` (${nomeDia(x.dia)})` : "";
+  const bloco = (t, a, f) => { L.push("", t); if (a && a.length) a.forEach(x => L.push("- " + f(x))); else L.push("- Nada registado."); };
+  if (w.resumo) L.push("", w.resumo);
+  if (w.energia != null) L.push("", `Energia média: ${num(w.energia)} de 5` + (w.check_ins ? ` · ${w.check_ins} check-ins` : ""));
+  bloco("Correu bem", w.correu_bem, x => x.texto + dia(x));
+  bloco("Aprendeste", w.aprendizagens, x => x.texto + dia(x));
+  bloco("Bloqueou", w.bloqueios, x => x.texto + dia(x));
+  if (w.feedback && w.feedback.length) bloco("Feedback", w.feedback, x => x.observacao + (x.reacao ? ` (${x.reacao}${x.nota ? ": " + x.nota : ""})` : ""));
+  bloco("Prioridades", w.prioridades, p => `${p.texto}${p.prazo ? ", " + p.prazo : ""} [${estadoPrio(p.estado)}]`);
+  if (w.ajuste_habito && w.ajuste_habito.sugestao) L.push("", "Para experimentar", "- " + w.ajuste_habito.sugestao);
+  return L.join("\n");
+}
 function openFile(n){
   const w = S.weeks.find(x=>x.semana===n); if (!w) return;
-  openYaml("data/marta/semana-0"+n+".yaml", Object.assign({semana:w.semana, utilizador:"marta"}, w), "Escrito com yaml.safe_dump depois de validado com Pydantic; o texto livre vai sempre entre aspas.");
+  openDialog(`Semana ${w.semana} · ${periodoCurto(w.periodo)}`, weekHtml(w), weekText(w), w.semana === 4 && S.newFile ? "Guardada agora, neste computador." : "Guardada neste computador.");
 }
 function exportData(){
   return {
@@ -993,14 +1085,14 @@ function exportData(){
     responsabilidades: P.resp.slice(),
     preferencias:{dias:P.dias.join(", "), hora:P.hora, lembrete:P.lembrete, relatorio:P.relatorio, perguntas:P.estilo, agenda_teams:P.teams, transcricoes:P.transcricoes},
     check_ins_semana_4: doneDays().map(d => { const r = S.days[d.k]; return {dia:d.k, energia:r.energia, porque:r.energia_nota||null, correu_bem:r.correu_bem?r.correu_bem.texto:null, bloqueio:r.bloqueio?(r.bloqueio.nenhum?"nenhum":r.bloqueio.texto):null, aprendizagem:r.aprendizagem?r.aprendizagem.texto:null}; }),
-    semanas_gravadas: S.weeks.map(w => "semana-0" + w.semana + ".yaml")
+    semanas_guardadas: S.weeks.map(w => `Semana ${w.semana} (${periodoCurto(w.periodo)})`)
   };
 }
-const openExport = () => openYaml("os-meus-dados.yaml", exportData(), "Cópia de tudo o que esta demo guarda sobre ti. Copia-a antes de apagar, se a quiseres manter.");
+const openExport = () => openYaml("Os meus dados", exportData(), "Cópia de tudo o que esta demo guarda sobre ti. Copia-a antes de apagar, se a quiseres manter.");
 $("#closeDlg").onclick = () => { const d = $("#fileDlg"); d.close ? d.close() : d.removeAttribute("open"); };
 $("#copyBtn").onclick = () => {
   const fallback = () => { const r = document.createRange(); r.selectNodeContents($("#fileBody")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); $("#copyBtn").textContent = "Selecionado"; };
-  try{ navigator.clipboard.writeText(currentYaml).then(() => $("#copyBtn").textContent = "Copiado", fallback); }catch(e){ fallback(); }
+  try{ navigator.clipboard.writeText(currentCopy).then(() => $("#copyBtn").textContent = "Copiado", fallback); }catch(e){ fallback(); }
 };
 $("#files").addEventListener("click", e => { const b = e.target.closest(".file"); if (b) openFile(Number(b.dataset.week)); });
 
@@ -1098,11 +1190,11 @@ function wipeSummary(sc){
   const feitos = doneDays().map(d => d.nome), out = [];
   out.push(feitos.length ? `${feitos.length} check-in${feitos.length>1?"s":""} desta semana (${lista(feitos)})` : "Nenhum check-in registado esta semana");
   if (S.chat && S.days[S.chat.dk].estado === "hoje") out.push(`O check-in de ${DAYN[S.chat.dk].nome}, que está a meio`);
-  out.push(S.saved ? "O relatório da semana 4, já gravado em semana-04.yaml" : S.report && S.report.edited ? "O rascunho do relatório da semana 4, com as tuas edições" : "O rascunho do relatório da semana 4");
+  out.push(S.saved ? "O relatório da semana 4, já guardado" : S.report && S.report.edited ? "O rascunho do relatório da semana 4, com as tuas edições" : "O rascunho do relatório da semana 4");
   if (Object.keys(S.reacoes).length) out.push("As tuas reações ao feedback");
   if (sc === "tudo"){
     const prev = S.weeks.filter(w => w.semana < 4).length;
-    if (prev) out.push(`O histórico das semanas anteriores (${prev} ficheiro${prev>1?"s":""})`);
+    if (prev) out.push(`O histórico das semanas anteriores (${prev} semana${prev>1?"s":""})`);
     out.push(`O perfil (${P.nome}, ${P.resp.length} responsabilidades e as preferências), que volta aos valores de exemplo`);
   }
   return out;

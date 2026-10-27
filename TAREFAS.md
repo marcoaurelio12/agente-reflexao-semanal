@@ -23,6 +23,7 @@ Ficheiros: `frontend/` · Detalhe: [`frontend/README.md`](frontend/README.md)
 - [ ] F4 Faixa de privacidade sempre visível
 - [ ] F5 Ligar à API real (T+1:30)
 - [ ] F6 (P1) Métricas no painel · (P2) botão "Resumo do mês"
+- [x] F7 Tirar do ecrã os nomes das ferramentas, os caminhos de ficheiros e o debug (ficam em `reflexaoDiag()` na consola)
 
 **Feito =** o roteiro de `pitch/ROTEIRO-DEMO.md` corre do princípio ao fim no browser.
 

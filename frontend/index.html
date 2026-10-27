@@ -64,9 +64,9 @@
     </section>
 
     <aside class="col" id="paneCtx" aria-label="Contexto do dia">
-      <div class="card"><h3>Fontes <span class="mono">get_day_context</span></h3><div class="src" id="sources"></div></div>
+      <div class="card"><h3>Fontes</h3><div class="src" id="sources"></div></div>
       <div class="card"><h3 id="agTitle">Agenda de quinta</h3><div id="agenda"></div></div>
-      <div class="card"><h3>Padrões <span class="mono">find_patterns</span></h3><div id="rules"></div><div class="foot">O LLM só classifica os temas; estas regras decidem o que é um padrão.</div></div>
+      <div class="card"><h3>Padrões</h3><div id="rules"></div><div class="foot">Um padrão só aparece quando algo se repete nos teus check-ins, segundo estas regras fixas.</div></div>
       <div class="card"><h3>Responsabilidades <a href="#perfil" class="mono" style="color:var(--accent);text-decoration:none">editar</a></h3><ul class="resp" id="respCtx"></ul></div>
     </aside>
   </div>
@@ -81,7 +81,7 @@
       <div class="hist">
         <div class="chart"><div class="lab2">Energia média por semana</div><div id="weekChart"></div></div>
         <div><div class="lab2">Temas que mais aparecem</div><div class="themes" id="themes"></div></div>
-        <div><div class="lab2">Ficheiros <span class="mono muted" style="font-weight:400">data/marta/</span></div><div class="files" id="files"></div><div class="foot">Um YAML por semana, só neste computador.</div></div>
+        <div><div class="lab2">Semanas guardadas</div><div class="files" id="files"></div><div class="foot">Um registo por semana, só neste computador. Clica para ver.</div></div>
       </div>
     </section>
   </div>
@@ -149,11 +149,11 @@
   </div>
 </section>
 
-<dialog id="fileDlg">
+<dialog id="fileDlg" aria-labelledby="fileName">
   <div class="dlg">
-    <header><code id="fileName"></code><div class="row"><button type="button" class="btn" id="copyBtn">Copiar</button><button type="button" class="btn" id="closeDlg">Fechar</button></div></header>
-    <pre id="fileBody"></pre>
-    <footer id="fileFoot">Escrito com yaml.safe_dump depois de validado com Pydantic; o texto livre vai sempre entre aspas.</footer>
+    <header><strong id="fileName"></strong><div class="row"><button type="button" class="btn" id="copyBtn">Copiar</button><button type="button" class="btn" id="closeDlg">Fechar</button></div></header>
+    <div class="dbody" id="fileBody"></div>
+    <footer id="fileFoot"></footer>
   </div>
 </dialog>
 
