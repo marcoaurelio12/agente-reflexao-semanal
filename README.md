@@ -11,8 +11,8 @@ um resumo, 3 prioridades, os padrões que se repetem e um pequeno ajuste de háb
 ## Ler primeiro: o que há a fazer e quem faz o quê
 
 Temos 3 horas. Python + GLM-5.3 da z.ai (API compatível com OpenAI). **Não há base de dados:** a memória é um diário em
-ficheiros markdown (`memoria/`), que já tem 3 semanas fictícias. A demo é a 4.ª semana, em que o
-agente tem de reparar que um bloqueio se repete.
+ficheiros markdown (`memoria/`), que já tem 4 semanas fictícias. A demo ao vivo é a semana
+seguinte, em que o agente tem de reparar que um bloqueio se repete.
 
 | Função | O que faz | Começa por | Quem |
 |---|---|---|---|

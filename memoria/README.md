@@ -39,6 +39,7 @@ Antes de cada ensaio: `python -m backend.reset_demo` (apaga a W44 e a linha dela
 
 | Semana | Energia | Bloqueio principal | Aprendizagem |
 |---|---|---|---|
+| W40 (28 set a 4 out) | 5 | Âmbito do diagnóstico ainda difuso | Planear a semana num sítio só |
 | W41 (5 a 11 out) | 4 | Reuniões de última hora partem as manhãs | Preparar a reunião na véspera |
 | W42 (12 a 18 out) | 3 | Dados de outra equipa atrasados; notificações | As manhãs de foco rendem o dobro |
 | W43 (19 a 25 out) | 2 | 14 reuniões (2.ª vez); dormiu mal | Foco outra vez; pedir ajuda cedo |

@@ -23,4 +23,4 @@
 
 ## Começou a usar o agente
 
-2026-10-09 (semana de 5 a 11 de outubro)
+2026-10-02 (semana de 28 de setembro a 4 de outubro)

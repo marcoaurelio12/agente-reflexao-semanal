@@ -23,8 +23,10 @@
 6. **Segurança em duas camadas:** um filtro no código antes do LLM + regras no prompt. O agente
    não é terapeuta e não diagnostica.
 7. **Minimização de dados:** guarda-se a entrada estruturada da semana, não a transcrição.
-8. **Dados fictícios:** persona Inês; semanas W41 a W43 já no diário; a demo ao vivo é a W44
+8. **Dados fictícios:** persona Inês; semanas W40 a W43 já no diário; a demo ao vivo é a W44
    (`DEMO_SEMANA=2026-W44`).
+   _2026-10-27 14:05, Marco: acrescentada a W40 (primeira semana, energia 5) para o diário entrar
+   na demo com 4 semanas completas; os 4 padrões da W43 mantêm-se._
 9. **Tom:** português de Portugal, "tu", frases curtas, sem avaliação nem cobrança.
 10. **Fora de âmbito no código:** login, vários utilizadores, integrações reais (Outlook, Teams),
     base de dados, deploy. Tudo isto aparece como visão no pitch.

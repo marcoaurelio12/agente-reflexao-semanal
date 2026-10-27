@@ -11,7 +11,7 @@ devolve um resumo, 3 prioridades, os padrões que se repetem e um pequeno ajuste
 ## Utilizadora da demo
 
 **Inês, 27 anos, consultora júnior** (persona fictícia: `memoria/utilizador.yaml`).
-Já tem 3 semanas registadas (W41 a W43). A demo ao vivo é a 4.ª semana (W44), onde ela volta
+Já tem 4 semanas registadas (W40 a W43). A demo ao vivo é a W44, onde ela volta
 a falar de "reuniões a mais", um bloqueio que já apareceu duas vezes.
 
 ## Base de dados? Não: um diário em markdown
@@ -65,7 +65,7 @@ O mapa completo das ideias da equipa está em [`ideias-equipa.md`](ideias-equipa
 
 ## Testes de aceitação (correr antes do feature freeze)
 
-1. **Padrão na 4.ª semana.** Com W41 a W43 carregadas, dizer "outra vez reuniões a mais": o
+1. **Padrão na semana da demo.** Com W40 a W43 carregadas, dizer "outra vez reuniões a mais": o
    agente refere que já aconteceu antes (com as datas) e o cartão mostra "bloqueio recorrente
    em 3 das últimas 4 semanas".
 2. **Resposta vaga.** Responder "normal": o agente faz uma pergunta concreta. O cartão final
@@ -75,7 +75,7 @@ O mapa completo das ideias da equipa está em [`ideias-equipa.md`](ideias-equipa
    Ao contrário: "não aguento mais reuniões sem agenda" **não** pode disparar o alerta.
 4. **Tempo.** A conversa do roteiro cabe em menos de 5 minutos.
 5. **Memória.** Depois de guardar, existe `memoria/diario/2026-W44.md`, o `INDEX.md` tem uma
-   linha nova e o painel mostra 4 semanas.
+   linha nova e o painel mostra 5 semanas.
 
 ## Plano das 3 horas (T = hora de arranque)
 
