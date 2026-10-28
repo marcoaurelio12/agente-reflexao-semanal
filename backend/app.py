@@ -4,17 +4,23 @@ Correr a partir da raiz do repo:  python -m uvicorn backend.app:app --reload
 Depois abrir http://localhost:8000
 """
 import logging
-from datetime import date
+import os
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from backend import conversa, llm, memoria, padroes, seguranca
 
 RAIZ = Path(__file__).resolve().parent.parent
 NOTA_VAGA = "A última resposta foi vaga: faz UMA pergunta de seguimento concreta; não assumas nada."
+FUSO = ZoneInfo("Europe/Lisbon")
+HORA_REFLEXAO = time(17, 0)  # sexta-feira, 17:00
+_MOCK_GERAL = ("Sem o modelo de linguagem ligado, só consigo conduzir a reflexão semanal. "
+               "Abre uma «Nova reflexão» e eu levo a semana até ao resumo.")
 
 app = FastAPI(title="Agente de Reflexão Semanal")
 log = logging.getLogger("uvicorn.error")
@@ -28,6 +34,7 @@ class Mensagem(BaseModel):
 
 class PedidoChat(BaseModel):
     mensagens: list[Mensagem] = []
+    modo: str = "semanal"  # "semanal" (reflexão) | "geral" (conversa livre do widget)
 
 
 class PedidoGuardar(BaseModel):
@@ -41,21 +48,29 @@ def _erro_llm(e: Exception) -> HTTPException:
 
 @app.post("/api/chat")
 def chat(pedido: PedidoChat):
-    """Abertura (mensagens vazias), perguntas, seguimento se vago, marcador de fecho."""
+    """Abertura (mensagens vazias), perguntas, seguimento se vago, marcador de fecho.
+
+    modo="geral" usa o prompt de conversa livre (agente/GERAL.md) e nunca fecha a semana.
+    """
     mensagens = [m.model_dump() for m in pedido.mensagens]
     ultima = next((m["content"] for m in reversed(mensagens) if m["role"] == "user"), None)
     if ultima:
         alerta = seguranca.verificar(ultima)
         if alerta:
             return {"resposta": alerta["resposta"], "pronto_para_fechar": False, "alerta_seguranca": True}
-    nota = NOTA_VAGA if ultima and seguranca.e_vaga(ultima) else None
-    try:
-        texto = llm.responder(conversa.montar_contexto(nota), mensagens)
-    except Exception as e:
-        raise _erro_llm(e)
+    geral = pedido.modo == "geral"
+    nota = None if geral else (NOTA_VAGA if ultima and seguranca.e_vaga(ultima) else None)
+    if geral and llm.modo_mock():
+        texto = _MOCK_GERAL
+    else:
+        sistema = conversa.montar_contexto_geral() if geral else conversa.montar_contexto(nota)
+        try:
+            texto = llm.responder(sistema, mensagens)
+        except Exception as e:
+            raise _erro_llm(e)
     pronto = conversa.MARCADOR_FECHO in texto
     texto = texto.replace(conversa.MARCADOR_FECHO, "").strip()
-    return {"resposta": texto, "pronto_para_fechar": pronto, "alerta_seguranca": False}
+    return {"resposta": texto, "pronto_para_fechar": pronto and not geral, "alerta_seguranca": False}
 
 
 @app.post("/api/fechar")
@@ -128,29 +143,69 @@ def ver_memoria():
     }
 
 
-class PedidoLLM(BaseModel):
-    mensagens: list[Mensagem]
-    json_: bool = Field(False, alias="json")
+@app.get("/api/estado")
+def estado():
+    """Disponibilidade do LLM e semana atual, para o cabeçalho do frontend."""
+    mock = llm.modo_mock()
+    semana, periodo = memoria.semana_atual()
+    return {"disponivel": not mock, "modo": "mock" if mock else "llm",
+            "modelo": None if mock else os.getenv("OPENAI_MODEL", "").strip() or llm.MODELO_POR_OMISSAO,
+            "semana": semana, "periodo": periodo}
 
 
-@app.get("/api/llm")
-def llm_estado():
-    """Ponte do frontend (frontend/ponte.js): o modo live só liga se houver chave."""
-    return {"disponivel": not llm.modo_mock()}
+def _escapar_ics(texto: str) -> str:
+    """Escapes de texto do RFC 5545 (barra, ponto e vírgula, vírgula, mudanças de linha)."""
+    return (texto.replace("\\", "\\\\").replace(";", "\\;")
+            .replace(",", "\\,").replace("\r\n", "\\n").replace("\n", "\\n"))
 
 
-@app.post("/api/llm")
-def llm_ponte(pedido: PedidoLLM):
-    """Ponte do frontend: as mensagens vêm já montadas pelo app.js; devolve texto ou JSON do Gemini."""
-    if llm.modo_mock():
-        raise HTTPException(503, "Sem chave: o modo live está desligado.")
-    mensagens = [m.model_dump() for m in pedido.mensagens]
-    try:
-        if pedido.json_:
-            return {"json": llm.extrair_json("", mensagens)}
-        return {"texto": llm.responder("", mensagens)}
-    except Exception as e:
-        raise _erro_llm(e)
+def _proxima_sexta(agora: datetime) -> date:
+    """A próxima sexta-feira à hora da reflexão (hoje ainda conta se a hora não passou)."""
+    dias = (4 - agora.weekday()) % 7  # segunda=0 … sexta=4
+    if dias == 0 and (agora.hour, agora.minute) >= (HORA_REFLEXAO.hour, HORA_REFLEXAO.minute):
+        dias = 7
+    return (agora + timedelta(days=dias)).date()
+
+
+@app.get("/api/ics")
+def ics(semana: str | None = None):
+    """Ficheiro .ics: reflexão semanal recorrente (sexta, 17:00, Lisboa) com as prioridades
+    da semana indicada (ou da última guardada) na descrição."""
+    semanas = memoria.listar_semanas(ultimas=0)
+    if semana:
+        alvo = next((s for s in semanas if s["meta"]["semana"] == semana), None)
+        if alvo is None:
+            raise HTTPException(404, f"Semana desconhecida: {semana}")
+    else:
+        alvo = semanas[-1] if semanas else None
+
+    agora = datetime.now(FUSO)
+    inicio = datetime.combine(_proxima_sexta(agora), HORA_REFLEXAO, tzinfo=FUSO).astimezone(timezone.utc)
+    descricao = "5 minutos para fechar a semana: o que correu bem, o que aprendeste, o que bloqueou."
+    if alvo:
+        if alvo["prioridades"]:
+            descricao += ("\n\nPrioridades para a semana:\n"
+                          + "\n".join(f"{n}. {p}" for n, p in enumerate(alvo["prioridades"], 1)))
+        if alvo["ajuste"]:
+            descricao += "\n\nAjuste a experimentar: " + alvo["ajuste"]
+    linhas = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Agente de Reflexao Semanal//PT",
+        "CALSCALE:GREGORIAN",
+        "BEGIN:VEVENT",
+        f"UID:reflexao-{alvo['meta']['semana'] if alvo else 'semanal'}@agente-reflexao-semanal",
+        f"DTSTAMP:{agora.astimezone(timezone.utc):%Y%m%dT%H%M%SZ}",
+        f"DTSTART:{inicio:%Y%m%dT%H%M%SZ}",
+        "DURATION:PT15M",
+        "RRULE:FREQ=WEEKLY",
+        "SUMMARY:Reflexão semanal",
+        f"DESCRIPTION:{_escapar_ics(descricao)}",
+        "END:VEVENT",
+        "END:VCALENDAR",
+    ]
+    return Response("\r\n".join(linhas) + "\r\n", media_type="text/calendar; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="reflexao-semanal.ics"'})
 
 
 @app.post("/api/resumo-mensal")

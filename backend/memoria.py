@@ -72,7 +72,8 @@ def listar_semanas(ultimas: int = 4) -> list[dict]:
     """As últimas N entradas do diário, por ordem cronológica (mais antiga primeiro).
 
     Cada item: {"meta": frontmatter (dict), "markdown": entrada completa, "resumo": texto da secção Resumo}.
-    Também traz "corpo" (sem frontmatter) e "prioridades" (lista de textos), para o painel.
+    Também traz "corpo" (sem frontmatter), "prioridades" (lista de textos) e "ajuste" (secção
+    Ajuste de hábito), para o painel e para o /api/ics.
     """
     semanas = []
     for caminho in sorted(PASTA_DIARIO.glob("*.md")):
@@ -85,6 +86,7 @@ def listar_semanas(ultimas: int = 4) -> list[dict]:
             "corpo": corpo,
             "resumo": " ".join(_secao(corpo, "Resumo").split()),
             "prioridades": _itens_numerados(_secao(corpo, "Prioridades para a semana seguinte")),
+            "ajuste": " ".join(_secao(corpo, "Ajuste de hábito").split()),
         })
     return semanas[-ultimas:] if ultimas > 0 else semanas
 

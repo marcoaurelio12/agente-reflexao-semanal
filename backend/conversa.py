@@ -60,6 +60,23 @@ def montar_contexto_fecho() -> str:
     return "\n\n".join([_agente("FECHO.md"), temas, s["pessoa"], s["diario"], s["padroes"], s["semana"]])
 
 
+def montar_contexto_geral() -> str:
+    """System prompt da conversa livre (widget): agente/GERAL.md + segurança + diário completo."""
+    s = _secoes_memoria(listar_diario_completo())
+    partes = [_agente("GERAL.md"), _agente("SEGURANCA.md"),
+              s["pessoa"], s["index"], s["diario"], s["padroes"]]
+    agenda = memoria.carregar_agenda(memoria.semana_atual()[0])
+    if agenda:
+        partes.append("## Agenda desta semana\n\n" + agenda.strip())
+    partes.append(s["semana"])
+    return "\n\n".join(partes)
+
+
+def listar_diario_completo() -> list[dict]:
+    """Todas as semanas do diário (a conversa livre pode perguntar qualquer coisa, não só as últimas 4)."""
+    return memoria.listar_semanas(ultimas=0)
+
+
 def transcricao(mensagens: list[dict]) -> str:
     """A conversa como texto, para o fecho (o LLM recebe-a numa só mensagem)."""
     quem = {"assistant": "Agente", "user": "Pessoa"}

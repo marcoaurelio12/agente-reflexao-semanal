@@ -11,29 +11,35 @@
  │ chat         │ ───────────────▶ │ 1. seguranca.verificar()       │ ◀──── │ agente/*.md, temas.yaml │
  │ cartão fecho │ ◀─────────────── │ 2. contexto = prompts + diário │ ◀──── │ memoria/CONTEXTO.md     │
  │ painel       │ POST /api/fechar │    + padrões + agenda          │ ◀──── │ memoria/INDEX.md        │
- └──────────────┘ POST /api/guardar│ 3. llm (Gemini ou mock)        │       │ memoria/diario/*.md     │
-                  GET /api/memoria │ 4. padroes.detetar()           │ ────▶ │ (escreve 2026-W44.md)   │
-                                   └────────────────────────────────┘       └─────────────────────────┘
-                                                  │ texto da conversa
-                                                  ▼
-                                           API Gemini (Google)
+ │ widget geral │ POST /api/guardar│ 3. llm (Gemini ou mock)        │       │ memoria/diario/*.md     │
+ └──────────────┘ GET /api/memoria │ 4. padroes.detetar()           │ ────▶ │ (escreve 2026-W44.md)   │
+                  GET /api/estado  └────────────────────────────────┘       └─────────────────────────┘
+                  GET /api/ics                │ texto da conversa
+                                              ▼
+                                       API Gemini (Google)
 ```
 
 ## Fluxo
 
 1. **Abertura:** o frontend chama `POST /api/chat` com `mensagens: []`. O agente cumprimenta e
    retoma as prioridades da semana passada.
-2. **Conversa:** o frontend guarda o histórico e envia-o inteiro a cada mensagem (o servidor não guarda estado).
+2. **Conversa:** o frontend guarda o histórico (neste navegador; conversas antigas podem ser
+   reabertas e continuadas) e envia-o inteiro a cada mensagem (o servidor não guarda estado).
 3. **Antes do LLM:** `seguranca.verificar(última mensagem do utilizador)`. Se houver alerta,
    devolve a resposta fixa de `agente/SEGURANCA.md` com `alerta_seguranca: true`, sem chamar o LLM.
 4. **Resposta vaga:** se `seguranca.e_vaga()`, acrescenta ao contexto a nota "A última
-   resposta foi vaga: faz UMA pergunta de seguimento concreta; não assumas nada."
+   resposta foi vaga: faz UMA pergunta de seguimento concreta; não assumas nada." (só no modo semanal)
 5. **Fecho:** quando o agente tem as 4 respostas, acaba a mensagem com `<<FECHAR>>`. O servidor
    remove o marcador e devolve `pronto_para_fechar: true`.
 6. **`POST /api/fechar`:** LLM com `agente/FECHO.md` → JSON da semana → `padroes.detetar()` sobre
-   as semanas anteriores + esta → devolve a semana **ainda por guardar**.
+   as semanas anteriores + esta → devolve a semana **ainda por guardar**. O resumo nunca é
+   pré-escrito: vem sempre daqui.
 7. A pessoa revê e edita as prioridades → **`POST /api/guardar`** → escreve
    `memoria/diario/AAAA-Www.md` (mesmo formato das semanas anteriores) e acrescenta a linha ao `INDEX.md`.
+8. **Conversa livre (widget):** `POST /api/chat` com `modo: "geral"` usa `agente/GERAL.md`
+   (perguntas sobre o diário, sem conduzir a reflexão) e nunca devolve `pronto_para_fechar`.
+9. **Calendário:** `GET /api/ics` devolve um evento recorrente (sexta, 17:00, Lisboa) com as
+   prioridades da última semana guardada na descrição.
 
 ## API
 
@@ -44,10 +50,13 @@
 {"mensagens": [
   {"role": "assistant", "content": "Olá, Inês. Na semana passada escolheste…"},
   {"role": "user", "content": "Normal."}
-]}
+], "modo": "semanal"}        // "semanal" (omissão) | "geral" (conversa livre do widget)
 // resposta
 {"resposta": "Qual das três avançou mais?", "pronto_para_fechar": false, "alerta_seguranca": false}
 ```
+
+`modo: "geral"` usa o system prompt de `agente/GERAL.md` (diário completo, sem as 4 perguntas),
+ignora a nota de resposta vaga e devolve sempre `pronto_para_fechar: false`.
 
 ### `POST /api/fechar`
 
@@ -104,17 +113,21 @@
 
 `semanas` vem por ordem cronológica (mais antiga primeiro).
 
-### `GET /api/llm` e `POST /api/llm`: ponte do frontend novo
-
-O frontend novo (`frontend/app.js`, feito como artifact do Claude) monta os próprios prompts e
-pede `window.claude.use("sample")`. `frontend/ponte.js` liga isso a estes endpoints.
+### `GET /api/estado`
 
 ```json
-// GET → {"disponivel": true}   (false sem chave: o app.js fica no modo guião)
-// POST pedido
-{"mensagens": [{"role": "user", "content": "…"}], "json": false}
-// POST resposta: {"texto": "…"}  ou, com "json": true, {"json": {…}}
+{"disponivel": false, "modo": "mock" | "llm", "modelo": "gemini-3.6-flash" | null,
+ "semana": "2026-W44", "periodo": "2026-10-26 a 2026-11-01"}
 ```
+
+Badge do cabeçalho do frontend ("respostas de exemplo" vs. "Gemini") e subtítulo da semana atual.
+
+### `GET /api/ics[?semana=AAAA-Www]`
+
+`text/calendar` (RFC 5545, CRLF, UTF-8): evento "Reflexão semanal" recorrente
+(`RRULE:FREQ=WEEKLY`), a começar na próxima sexta-feira às 17:00 de `Europe/Lisbon` (em UTC),
+com as prioridades e o ajuste de hábito da semana indicada (ou da última guardada) na descrição.
+Semana desconhecida → 404. `Content-Disposition: attachment; filename="reflexao-semanal.ics"`.
 
 ### `POST /api/resumo-mensal` (P2)
 
@@ -126,7 +139,7 @@ Pedido vazio → `{"texto": "…"}` com a evolução das prioridades e aprendiza
 # backend/memoria.py — Backend B
 carregar_contexto() -> str                      # memoria/CONTEXTO.md
 carregar_index() -> str                         # memoria/INDEX.md
-listar_semanas(ultimas: int = 4) -> list[dict]  # [{"meta": frontmatter, "markdown": str, "resumo": str}], cronológica
+listar_semanas(ultimas: int = 4) -> list[dict]  # [{"meta": frontmatter, "markdown": str, "resumo": str, "prioridades": [str], "ajuste": str}], cronológica
 carregar_agenda(semana_id: str) -> str | None   # memoria/agenda/<id>.md
 meta_de(semana: dict) -> dict                   # JSON do /api/fechar → formato do frontmatter
 guardar_semana(semana: dict) -> str             # escreve o .md + linha no INDEX.md; devolve caminho relativo
@@ -148,6 +161,7 @@ extrair_json(system: str, mensagens: list[dict]) -> dict
 # backend/conversa.py — Backend A
 montar_contexto(nota_extra: str | None = None) -> str
 montar_contexto_fecho() -> str
+montar_contexto_geral() -> str                  # widget: agente/GERAL.md + segurança + diário completo
 ```
 
 ## Contexto (system prompt), por esta ordem
@@ -164,6 +178,8 @@ montar_contexto_fecho() -> str
 10. Nota de resposta vaga, se for o caso
 
 Contexto do fecho: `agente/FECHO.md` + `agente/temas.yaml` + itens 4, 6, 7 e 9 + a conversa.
+Contexto da conversa livre: `agente/GERAL.md` + `agente/SEGURANCA.md` + itens 4, 5, 6, 7, 8 e 9
+(diário completo, não só as últimas 4 semanas).
 Os ficheiros são lidos em cada pedido, para a equipa afinar os prompts sem reiniciar o servidor.
 
 ## Formato do diário

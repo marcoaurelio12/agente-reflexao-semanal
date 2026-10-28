@@ -3,4 +3,5 @@ uvicorn[standard]
 openai
 pyyaml
 python-dotenv
+tzdata
 pytest

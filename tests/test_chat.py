@@ -175,6 +175,63 @@ def test_guardar_escreve_diario_e_painel_passa_a_5_semanas(cliente, monkeypatch,
 
 
 # ---------------------------------------------------------------------------
+# Conversa livre (widget): modo geral
+# ---------------------------------------------------------------------------
+
+def test_modo_geral_usa_o_prompt_livre_e_nao_fecha_a_semana(cliente, monkeypatch):
+    capturado = {}
+
+    def fake(system, mensagens):
+        capturado.update(system=system, mensagens=mensagens)
+        return "No teu diário, a semana de 19 de outubro foi a mais pesada: 14 reuniões."
+
+    monkeypatch.setattr(llm, "modo_mock", lambda: False)
+    monkeypatch.setattr(llm, "responder", fake)
+    r = _chat_geral(cliente, [{"role": "user", "content": "Qual foi a minha pior semana?"}])
+    assert "mais pesada" in r["resposta"]
+    assert r["pronto_para_fechar"] is False and r["alerta_seguranca"] is False
+    # contexto da conversa livre: GERAL.md, não o AGENTE.md da reflexão
+    assert "Conversa livre" in capturado["system"]
+    assert "Quem é a pessoa" in capturado["system"]  # o diário continua a entrar
+    assert "fluxo da conversa" not in capturado["system"].lower()
+
+
+def test_modo_geral_em_mock_responde_sem_ir_a_rede(cliente, monkeypatch):
+    def fake(*a):
+        raise AssertionError("o LLM não deve ser chamado em modo mock")
+
+    monkeypatch.setattr(llm, "responder", fake)
+    r = _chat_geral(cliente, [{"role": "user", "content": "Olá"}])
+    assert r["resposta"].strip() and r["pronto_para_fechar"] is False
+
+
+def test_modo_geral_nota_vaga_nao_se_aplica(cliente, monkeypatch):
+    capturado = {}
+
+    def fake(system, mensagens):
+        capturado.setdefault("system", system)
+        return "Pergunta-me o que quiseres sobre as tuas semanas."
+
+    monkeypatch.setattr(llm, "modo_mock", lambda: False)
+    monkeypatch.setattr(llm, "responder", fake)
+    _chat_geral(cliente, [{"role": "user", "content": "Normal."}])
+    assert "A última resposta foi vaga" not in capturado["system"]
+
+
+def test_modo_geral_filtro_de_seguranca_continua_antes_do_llm(cliente, monkeypatch):
+    monkeypatch.setattr(llm, "responder", lambda *a: "NAO DEVIA ACONTECER")
+    r = _chat_geral(cliente, [{"role": "user", "content": "Estou em baixo há semanas e não vejo saída."}])
+    assert r["alerta_seguranca"] is True
+    assert "SNS 24" in r["resposta"]
+
+
+def _chat_geral(cliente, historico):
+    r = cliente.post("/api/chat", json={"mensagens": historico, "modo": "geral"})
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+# ---------------------------------------------------------------------------
 # Robustez
 # ---------------------------------------------------------------------------
 
