@@ -38,6 +38,9 @@
    `memoria/diario/AAAA-Www.md` (mesmo formato das semanas anteriores) e acrescenta a linha ao `INDEX.md`.
 8. **Conversa livre (widget):** `POST /api/chat` com `modo: "geral"` usa `agente/GERAL.md`
    (perguntas sobre o diário, sem conduzir a reflexão) e nunca devolve `pronto_para_fechar`.
+   Se a pessoa pediu ajuda e 1-2 ações servirem, o LLM acaba a mensagem com `<<ACOES:id1,id2>>`;
+   o servidor valida os ids contra `agente/ACOES.md`, remove o marcador do texto e devolve
+   as ações em `acoes` (só no modo geral; em mock e no semanal é sempre `[]`).
 9. **Calendário:** `GET /api/ics` devolve um evento recorrente (sexta, 17:00, Lisboa) com as
    prioridades da última semana guardada na descrição.
 
@@ -52,11 +55,20 @@
   {"role": "user", "content": "Normal."}
 ], "modo": "semanal"}        // "semanal" (omissão) | "geral" (conversa livre do widget)
 // resposta
-{"resposta": "Qual das três avançou mais?", "pronto_para_fechar": false, "alerta_seguranca": false}
+{"resposta": "Qual das três avançou mais?", "pronto_para_fechar": false, "alerta_seguranca": false,
+ "acoes": [{"id": "novo-habito", "texto": "Sugerir um novo hábito", "tipo": "mensagem",
+            "mensagem": "Sugere-me um novo hábito para a semana, a partir do que já resultou no meu diário."}]}
 ```
 
 `modo: "geral"` usa o system prompt de `agente/GERAL.md` (diário completo, sem as 4 perguntas),
 ignora a nota de resposta vaga e devolve sempre `pronto_para_fechar: false`.
+
+`acoes` são os botões de sugestão do widget (chips): `[]` por omissão, sempre no modo semanal e
+sempre em modo mock. Só o LLM (com a conversa livre) pode acabar a mensagem com
+`<<ACOES:id1,id2>>`; o servidor valida os ids contra o catálogo `agente/ACOES.md` (bloco yaml),
+descarta inválidos, deduplica, trunca a 2 e remove o marcador do texto. O clique num chip
+`tipo: "mensagem"` envia a `mensagem` do catálogo como uma mensagem normal da pessoa (o pedido
+não ganha campo novo); `tipo: "navegacao"` (`abrir-reflexao`) não envia nada — abre "Nova reflexão".
 
 ### `POST /api/fechar`
 
@@ -165,9 +177,10 @@ extrair_json(system: str, mensagens: list[dict]) -> dict
 # backend/conversa.py — Backend A
 montar_contexto(nota_extra: str | None = None) -> str
 montar_contexto_fecho() -> str
-montar_contexto_geral() -> str                  # widget: agente/GERAL.md + segurança + diário completo
+montar_contexto_geral() -> str                  # widget: agente/GERAL.md + ACOES.md + segurança + diário completo
 montar_contexto_mensal() -> str                 # resumo-mensal: agente/MENSAL.md + diário + padrões + métricas
 resumo_mensal_mock() -> str                     # resumo-mensal sem chave: factos calculados, texto determinístico
+carregar_acoes() -> list[dict]                  # catálogo do bloco yaml de agente/ACOES.md (lido em cada pedido)
 ```
 
 ## Contexto (system prompt), por esta ordem
@@ -184,8 +197,8 @@ resumo_mensal_mock() -> str                     # resumo-mensal sem chave: facto
 10. Nota de resposta vaga, se for o caso
 
 Contexto do fecho: `agente/FECHO.md` + `agente/temas.yaml` + itens 4, 6, 7 e 9 + a conversa.
-Contexto da conversa livre: `agente/GERAL.md` + `agente/SEGURANCA.md` + itens 4, 5, 6, 7, 8 e 9
-(diário completo, não só as últimas 4 semanas).
+Contexto da conversa livre: `agente/GERAL.md` + `agente/ACOES.md` + `agente/SEGURANCA.md` +
+itens 4, 5, 6, 7, 8 e 9 (diário completo, não só as últimas 4 semanas).
 Contexto do resumo mensal: `agente/MENSAL.md` + itens 4, 6 e 7 (últimas 4 semanas guardadas) +
 secção de métricas (energia por semana, prioridades cumpridas).
 Os ficheiros são lidos em cada pedido, para a equipa afinar os prompts sem reiniciar o servidor.

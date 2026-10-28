@@ -5,6 +5,20 @@
 
 ## 2026-10-28
 
+- 14:03 · full-stack · **Botões de sugestão no chat** (proposta `docs/propostas/sugestoes-no-chat.md`,
+  decisões do Marco pela recomendação: só o widget, `abrir-reflexao` entra, clique = mensagem do
+  catálogo, chips voltam ao reabrir enquanto não usados): `agente/ACOES.md` novo (catálogo yaml +
+  regras) entra no contexto da conversa livre; secção "Ações sugeridas" no `GERAL.md` (só quando a
+  pessoa pede ajuda; factos com datas primeiro; 2-3 frases com "Experimenta…"; proibido "devias",
+  etapas, métricas). `POST /api/chat` geral processa o marcador `<<ACOES:id1,id2>>` (valida ids,
+  descarta inválidos, deduplica, trunca a 2, remove o marcador) e devolve `acoes: [{id, texto,
+  tipo, mensagem}]` — `[]` no semanal e em mock; o campo extra `mensagem` (extensão ao exemplo da
+  proposta) é o texto exato do catálogo que o frontend envia no clique, para o catálogo viver só
+  em `agente/`. Widget: chips por baixo da última bolha do agente, `aria-label="Sugestões"`,
+  persistem no `localStorage` da thread, desaparecem ao usar/avançar; `abrir-reflexao` abre
+  "Nova reflexão" e fecha o widget sem pedido. `tests/test_acoes.py` (critérios 1, 2 servidor e
+  6): **51 verdes**. `ARQUITETURA.md` (§API acoes, §Fluxo 8, §Contexto, carregar_acoes) no mesmo
+  commit. Nota: `abrir-reflexao` não tem `mensagem` no catálogo (só navegação). `reset_demo` corrido.
 - 13:18 · full-stack · **P2 fechado (A6/F6) + 2 gaps do ecrã**: `POST /api/resumo-mensal` a
   funcionar — com LLM segue o `agente/MENSAL.md` novo (pt-PT, só factos, semanas por datas) via
   `conversa.montar_contexto_mensal()`; sem chave monta texto determinístico dos factos

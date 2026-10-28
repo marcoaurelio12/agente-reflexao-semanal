@@ -46,18 +46,40 @@ def _erro_llm(e: Exception) -> HTTPException:
     return HTTPException(502, f"O LLM não respondeu: {e}")
 
 
+def _extrair_acoes(texto: str) -> tuple[str, list[dict]]:
+    """Remove os marcadores <<ACOES:…>> do texto e devolve as ações válidas do catálogo.
+
+    Valida os ids (agente/ACOES.md), descarta os inválidos, deduplica e trunca a 2 — como
+    na proposta docs/propostas/sugestoes-no-chat.md §2c.
+    """
+    catalogo = {a["id"]: a for a in conversa.carregar_acoes()}
+    ids, acoes = [], []
+    for m in conversa.MARCADOR_ACOES.finditer(texto):
+        for aid in m.group(1).split(","):
+            aid = aid.strip()
+            if aid in catalogo and aid not in ids:
+                ids.append(aid)
+    for aid in ids[:2]:
+        a = catalogo[aid]
+        acoes.append({"id": a["id"], "texto": a.get("etiqueta", aid),
+                      "tipo": a.get("tipo", "mensagem"), "mensagem": a.get("mensagem", "")})
+    return conversa.MARCADOR_ACOES.sub("", texto).strip(), acoes
+
+
 @app.post("/api/chat")
 def chat(pedido: PedidoChat):
     """Abertura (mensagens vazias), perguntas, seguimento se vago, marcador de fecho.
 
-    modo="geral" usa o prompt de conversa livre (agente/GERAL.md) e nunca fecha a semana.
+    modo="geral" usa o prompt de conversa livre (agente/GERAL.md) e nunca fecha a semana;
+    só ele conhece os botões de sugestão (marcador <<ACOES:…>> de agente/ACOES.md).
     """
     mensagens = [m.model_dump() for m in pedido.mensagens]
     ultima = next((m["content"] for m in reversed(mensagens) if m["role"] == "user"), None)
     if ultima:
         alerta = seguranca.verificar(ultima)
         if alerta:
-            return {"resposta": alerta["resposta"], "pronto_para_fechar": False, "alerta_seguranca": True}
+            return {"resposta": alerta["resposta"], "pronto_para_fechar": False,
+                    "alerta_seguranca": True, "acoes": []}
     geral = pedido.modo == "geral"
     nota = None if geral else (NOTA_VAGA if ultima and seguranca.e_vaga(ultima) else None)
     if geral and llm.modo_mock():
@@ -70,7 +92,13 @@ def chat(pedido: PedidoChat):
             raise _erro_llm(e)
     pronto = conversa.MARCADOR_FECHO in texto
     texto = texto.replace(conversa.MARCADOR_FECHO, "").strip()
-    return {"resposta": texto, "pronto_para_fechar": pronto and not geral, "alerta_seguranca": False}
+    acoes: list[dict] = []
+    if geral and not llm.modo_mock():
+        texto, acoes = _extrair_acoes(texto)
+    else:
+        texto = conversa.MARCADOR_ACOES.sub("", texto).strip()
+    return {"resposta": texto, "pronto_para_fechar": pronto and not geral,
+            "alerta_seguranca": False, "acoes": acoes}
 
 
 @app.post("/api/fechar")

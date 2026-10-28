@@ -3,7 +3,10 @@
 Ordem em docs/ARQUITETURA.md §Contexto. Os ficheiros são lidos em cada pedido, para a equipa
 poder afinar os prompts sem reiniciar o servidor. Dono: Backend A (tarefas A2 e A4).
 """
+import re
 from pathlib import Path
+
+import yaml
 
 from backend import memoria, padroes
 
@@ -12,6 +15,7 @@ PASTA_AGENTE = RAIZ / "agente"
 PASTA_MEMORIA = RAIZ / "memoria"
 
 MARCADOR_FECHO = "<<FECHAR>>"
+MARCADOR_ACOES = re.compile(r"<<ACOES:([^<>\n]*)>>")
 
 
 def _agente(nome: str) -> str:
@@ -63,13 +67,20 @@ def montar_contexto_fecho() -> str:
 def montar_contexto_geral() -> str:
     """System prompt da conversa livre (widget): agente/GERAL.md + segurança + diário completo."""
     s = _secoes_memoria(listar_diario_completo())
-    partes = [_agente("GERAL.md"), _agente("SEGURANCA.md"),
+    partes = [_agente("GERAL.md"), _agente("ACOES.md"), _agente("SEGURANCA.md"),
               s["pessoa"], s["index"], s["diario"], s["padroes"]]
     agenda = memoria.carregar_agenda(memoria.semana_atual()[0])
     if agenda:
         partes.append("## Agenda desta semana\n\n" + agenda.strip())
     partes.append(s["semana"])
     return "\n\n".join(partes)
+
+
+def carregar_acoes() -> list[dict]:
+    """Catálogo de ações do bloco yaml de agente/ACOES.md (lido em cada pedido)."""
+    m = re.search(r"```yaml\n(.*?)\n```", _agente("ACOES.md"), re.S)
+    dados = yaml.safe_load(m.group(1)) if m else {}
+    return [a for a in (dados.get("acoes") or []) if isinstance(a, dict) and a.get("id")]
 
 
 def montar_contexto_mensal() -> str:

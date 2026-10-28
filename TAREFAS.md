@@ -83,3 +83,16 @@ Ficheiros: `pitch/ROTEIRO-DEMO.md`, `agente/*.md` (texto e tom), `memoria/` · D
 - [ ] D6 Preparar respostas às perguntas do júri
 
 **Feito =** vídeo de backup gravado e roteiro corrido 2× sem falhas.
+
+## Features pós-demo (2026-10-28, propostas em `docs/propostas/`)
+
+Implementadas pelo assistente com a autonomia do Marco; cada uma segue a proposta respetiva
+(e as recomendações lá marcadas) e fecha com a bateria de testes verde.
+
+- [x] FS1 Botões de sugestão no chat (`sugestoes-no-chat.md`): catálogo `agente/ACOES.md`,
+  marcador `<<ACOES:…>>` no modo geral, chips no widget, `tests/test_acoes.py`
+- [ ] FN2 Notas do dia (`notas-do-dia.md`): `memoria/notas/`, `/api/notas`, secção no contexto,
+  `notas_temas` no fecho, regra `nota_recorrente`, sidebar e widget, `tests/test_notas.py`
+- [ ] FC3 Painel de consentimento (`consentimento.md`): `memoria/CONSENTIMENTO.md`,
+  `/api/consentimento*`, toggles que filtram o contexto, lixeira + desfazer, diálogo
+  "O que o agente sabe sobre ti", `tests/test_consentimento.py`

@@ -181,6 +181,12 @@ button{cursor:pointer}
 .werr{padding:6px 14px;font-size:12px;color:var(--alert)}
 .wform{padding:10px 12px 12px;border-top:1px solid var(--line)}
 
+/* ── Chips de ações sugeridas (widget) ── */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 10px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;
+  font-size:12px;color:var(--ink-2)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+
 /* ── Diálogo do resumo do mês ──────────── */
 .dlg{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:0;
   width:min(560px,calc(100vw - 32px));box-shadow:0 12px 40px rgba(10,20,50,.25)}

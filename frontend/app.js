@@ -494,10 +494,37 @@ $("#menuBtn").onclick = () => {
 /* ───────── Widget de conversa livre ───────── */
 function renderWidget(){
   const intro = '<div class="wintro">Pergunta o que quiseres sobre as tuas semanas — prioridades, padrões, o que disseste e quando.</div>';
-  $("#wlog").innerHTML = intro + GERAL.msgs.map(bolha).join("");
+  let h = intro;
+  GERAL.msgs.forEach((m, i) => {
+    h += bolha(m);
+    // chips de ações sugeridas: só na última bolha do agente, enquanto não forem usados
+    if (i === GERAL.msgs.length - 1 && m.role === "assistant" && m.content != null
+        && !m.acoesUsadas && m.acoes && m.acoes.length){
+      h += '<div class="chips" role="group" aria-label="Sugestões">'
+           + m.acoes.map((a, j) => `<button type="button" class="chip" data-chip="${j}">${esc(a.texto)}</button>`).join("")
+           + "</div>";
+    }
+  });
+  $("#wlog").innerHTML = h;
+  $$("#wlog .chip").forEach(b => b.onclick = () => usarChip(+b.dataset.chip));
   $("#wlog").scrollTop = $("#wlog").scrollHeight;
   const ta = $("#wmsg"), send = $("#wsendBtn");
   ta.disabled = wbusy; send.disabled = wbusy;
+}
+function usarChip(j){
+  const ultima = GERAL.msgs[GERAL.msgs.length - 1];
+  const acao = ultima && ultima.acoes ? ultima.acoes[j] : null;
+  if (!acao || wbusy) return;
+  ultima.acoesUsadas = true;
+  salvarGeral();
+  if (acao.tipo === "navegacao"){
+    $("#widget").hidden = true;
+    $("#widgetBtn").setAttribute("aria-expanded", "false");
+    novaConversa();  // abre "Nova reflexão" sem pedido ao servidor
+  } else {
+    renderWidget();
+    enviarGeral(acao.mensagem);  // a mensagem exata do catálogo, como se fosse da pessoa
+  }
 }
 async function enviarGeral(texto){
   if (wbusy) return;
@@ -513,7 +540,9 @@ async function enviarGeral(texto){
   GERAL.msgs.push({ role: "assistant", content: null });
   try{
     const r = await api("/api/chat", { modo: "geral", mensagens: GERAL.msgs.filter(m => m.content != null).map(({ role, content }) => ({ role, content })) });
-    GERAL.msgs[GERAL.msgs.length - 1].content = r.resposta;
+    const ult = GERAL.msgs[GERAL.msgs.length - 1];
+    ult.content = r.resposta;
+    ult.acoes = r.acoes || [];  // os chips voltam ao reabrir o widget enquanto não usados
   }catch(e){
     GERAL.msgs.pop();
     GERAL.msgs[GERAL.msgs.length - 1].falha = true;
