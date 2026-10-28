@@ -10,170 +10,102 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header class="appbar">
+
+<header class="topbar">
+  <button type="button" class="iconbtn" id="menuBtn" aria-label="Conversas e diário" aria-expanded="false">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
   <div class="brand">
     <div class="mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20"><rect x="2" y="3" width="16" height="15" rx="2.5" fill="none" stroke="var(--on-accent)" stroke-width="1.8"/><path d="M2 7.5h16" stroke="var(--on-accent)" stroke-width="1.8"/><path d="M6.5 12.5l2 2 4.5-4.5" fill="none" stroke="var(--on-accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <div>
       <h1>Reflexão Semanal</h1>
-      <p><span id="who">Marta</span> · semana 4, 19 a 23 out · <span class="badge">dados fictícios</span></p>
+      <p id="subtitulo">a carregar…</p>
     </div>
   </div>
-  <nav class="nav" aria-label="Áreas">
-    <a href="#hoje" id="navHoje">Check-in diário</a>
-    <a href="#semana" id="navSemana">Relatório semanal</a>
-    <a href="#perfil" id="navPerfil">Perfil</a>
-  </nav>
   <div class="bar-right">
-    <div class="seg" role="radiogroup" aria-label="Motor do agente" id="engineSeg" hidden style="display:none">
-      <button type="button" role="radio" aria-checked="true" data-engine="guiao" id="engGuiao">Guião</button>
-      <button type="button" role="radio" aria-checked="false" data-engine="live" id="engLive" disabled title="A ligar ao Gemini…">Gemini ao vivo</button>
-    </div>
-    <button type="button" class="btn" id="resetBtn">Recomeçar demo</button>
+    <span class="badge" id="modoBadge" hidden></span>
+    <button type="button" class="btn primary" id="novaBtn">Nova reflexão</button>
   </div>
 </header>
 
-<!-- ═════════ CHECK-IN DIÁRIO ═════════ -->
-<section class="view" id="viewHoje" aria-label="Check-in diário">
-  <div class="subtabs" role="tablist" id="subtabs">
-    <button type="button" role="tab" aria-selected="false" data-pane="paneDias" id="stDias">Dias</button>
-    <button type="button" role="tab" aria-selected="true" data-pane="paneChat" id="stChat">Conversa</button>
-    <button type="button" role="tab" aria-selected="false" data-pane="paneCtx" id="stCtx">Contexto</button>
-  </div>
-  <div class="grid">
-    <aside class="col" id="paneDias" aria-label="Dias da semana">
-      <div class="card"><h3>Semana 4 <span class="mono" id="ckTime">check-in às 17:30</span></h3><div class="days" id="days"></div>
-        <div class="foot">Uma conversa curta por dia; o relatório junta tudo à sexta.</div></div>
-      <div class="card"><h3>Prioridades da semana 3</h3><ul class="prio" id="prioList"></ul></div>
-    </aside>
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Conversas e diário">
+    <section class="side-sec">
+      <h2>Conversas</h2>
+      <ul class="convs" id="convList"></ul>
+    </section>
+    <section class="side-sec">
+      <h2>O teu diário</h2>
+      <div class="energia-card" id="energiaCard" hidden></div>
+      <p class="meta" id="prioMeta" hidden></p>
+      <ul class="weeks" id="weekList"></ul>
+    </section>
+    <footer class="privacy">
+      Dados fictícios (persona de demonstração). O diário fica em markdown neste servidor —
+      sem bases de dados, sem contas, sem a chefia ver nada.
+    </footer>
+  </aside>
 
-    <section class="col chat on" id="paneChat" aria-label="Conversa">
+  <main class="main" id="main">
+    <!-- Conversa (reflexão semanal) -->
+    <section class="view chat-view" id="viewConversa" hidden>
       <div class="chathead">
-        <div><div class="t" id="chatTitle">Check-in de quinta</div><div class="s" id="chatSub"></div></div>
-        <div class="row"><div class="dots" id="dots" aria-hidden="true"></div><span class="clock" id="clock" title="Duração do check-in (meta: 2 minutos)">0:00 / 2:00</span></div>
+        <div>
+          <div class="t" id="chatTitle"></div>
+          <div class="s" id="chatSub"></div>
+        </div>
       </div>
       <div class="log" id="log" aria-live="polite"></div>
-      <div class="composer" id="composer">
-        <div class="chips" id="chips"></div>
-        <div class="cerr" id="cerr" role="alert"></div>
+      <div class="composer">
+        <div class="cerr" id="cerr" role="alert" hidden></div>
         <form class="form" id="form">
-          <label for="msg" class="sr">Resposta</label>
-          <textarea id="msg" rows="1" placeholder="Responde como a Marta…" aria-describedby="cerr"></textarea>
+          <label for="msg" class="sr">Mensagem</label>
+          <textarea id="msg" rows="1" placeholder="Escreve a tua resposta…"></textarea>
           <button type="submit" class="btn primary send" id="sendBtn">Enviar</button>
         </form>
       </div>
     </section>
 
-    <aside class="col" id="paneCtx" aria-label="Contexto do dia">
-      <div class="card"><h3>Fontes</h3><div class="src" id="sources"></div></div>
-      <div class="card"><h3 id="agTitle">Agenda de quinta</h3><div id="agenda"></div></div>
-      <div class="card"><h3>Padrões</h3><div id="rules"></div><div class="foot">Um padrão só aparece quando algo se repete nos teus check-ins, segundo estas regras fixas.</div></div>
-      <div class="card"><h3>Responsabilidades <a href="#perfil" class="mono" style="color:var(--accent);text-decoration:none">editar</a></h3><ul class="resp" id="respCtx"></ul></div>
-    </aside>
-  </div>
-</section>
-
-<!-- ═════════ RELATÓRIO SEMANAL ═════════ -->
-<section class="view scroll" id="viewSemana" aria-label="Relatório semanal">
-  <div class="rwrap">
-    <div id="reportBox"></div>
-    <section class="rcard" aria-label="Histórico">
-      <header><h3>Histórico</h3><span class="hint">últimas 4 semanas · dados simulados da persona de demo</span></header>
-      <div class="hist">
-        <div class="chart"><div class="lab2">Energia média por semana</div><div id="weekChart"></div></div>
-        <div><div class="lab2">Temas que mais aparecem</div><div class="themes" id="themes"></div></div>
-        <div><div class="lab2">Semanas guardadas</div><div class="files" id="files"></div><div class="foot">Um registo por semana, só neste computador. Clica para ver.</div></div>
+    <!-- Semana guardada (diário) -->
+    <section class="view week-view" id="viewSemana" hidden>
+      <div class="weekhead">
+        <div>
+          <div class="eyebrow" id="weekId"></div>
+          <h2 id="weekTitle"></h2>
+        </div>
+        <a class="btn" id="weekIcs" href="/api/ics" download>
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="2.5" y="3" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 6.5h11M5.5 1.8v2.4M10.5 1.8v2.4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+          Adicionar ao calendário
+        </a>
       </div>
+      <div class="weekbody" id="weekBody"></div>
     </section>
-  </div>
-</section>
+  </main>
+</div>
 
-<!-- ═════════ PERFIL ═════════ -->
-<section class="view scroll" id="viewPerfil" aria-label="Perfil">
-  <div class="pgrid">
-    <div class="pcol">
-      <div class="card">
-        <h3>Bases <span class="saved-ind" id="savedInd"></span></h3>
-        <div class="fields">
-          <div class="field"><label for="pNome">Nome</label><input type="text" id="pNome" autocomplete="off"><span class="ferr" id="eNome"></span></div>
-          <div class="field"><label for="pPapel">Papel</label><input type="text" id="pPapel"><span class="ferr" id="ePapel"></span></div>
-          <div class="field"><label for="pDesde">Na função desde</label><input type="text" id="pDesde"></div>
-          <div class="field"><label for="pManager">Manager</label><input type="text" id="pManager"></div>
-          <div class="field wide"><label for="pProjeto">Projeto atual</label><input type="text" id="pProjeto"></div>
-        </div>
-      </div>
-      <div class="card">
-        <h3>Responsabilidades <span class="mono" id="respCount"></span></h3>
-        <ul class="rlist" id="respList"></ul>
-        <div class="addrow"><label for="respNew" class="sr">Nova responsabilidade</label><input type="text" id="respNew" placeholder="Ex.: Enviar as atas ao cliente no próprio dia" maxlength="140"><button type="button" class="btn" id="respAdd">Adicionar</button></div>
-        <div class="ferr" id="eResp" style="margin-top:6px"></div>
-        <div class="foot">O agente usa-as para escolher perguntas quando não há agenda, e o relatório liga as prioridades a elas.</div>
-      </div>
-      <div class="card">
-        <h3>Os teus dados</h3>
-        <div class="ds" style="font-size:12.5px;color:var(--ink-2)">Os check-ins e o relatório ficam só neste computador. Ninguém da chefia os vê.</div>
-        <div class="row" style="margin-top:10px"><button type="button" class="btn small" id="exportBtn">Ver e copiar os meus dados</button><button type="button" class="btn danger small" id="wipeBtn">Apagar dados…</button></div>
-        <div class="foot">Apagar pede confirmação escrita e pode ser desfeito durante 10 segundos.</div>
-      </div>
-    </div>
-    <div class="pcol">
-      <div class="card">
-        <h3>Preferências do check-in</h3>
-        <div class="fields">
-          <div class="field wide"><span class="lab" id="lDias">Dias com check-in</span>
-            <div class="daypick" role="group" aria-labelledby="lDias" id="pDias"></div><span class="ferr" id="eDias"></span></div>
-          <div class="field"><label for="pHora">Hora da pergunta diária</label><input type="time" id="pHora"><span class="ferr" id="eHora"></span></div>
-          <div class="field"><label for="pLembrete">Lembrete por</label><select id="pLembrete"><option value="teams">Mensagem no Teams</option><option value="email">Email</option><option value="nenhum">Sem lembrete</option></select></div>
-          <div class="field"><label for="pRelatorio">Relatório semanal</label><select id="pRelatorio"><option value="sexta">Sexta, depois do check-in</option><option value="segunda">Segunda de manhã</option></select></div>
-          <div class="field"><label for="pEstilo">Perguntas</label><select id="pEstilo"><option value="curtas">Curtas e diretas</option><option value="abertas">Mais abertas</option></select></div>
-        </div>
-        <div class="foot">Cada check-in diário tem 4 perguntas e cerca de 2 minutos.</div>
-      </div>
-      <div class="card">
-        <h3>Fontes de contexto</h3>
-        <div class="switch">
-          <div class="nm">Importar a agenda do Microsoft Teams</div>
-          <label class="tg"><input type="checkbox" id="pTeams" role="switch"><span></span><span class="sr">Importar a agenda do Microsoft Teams</span></label>
-          <div class="ds">Títulos, participantes e duração das reuniões. As perguntas do dia passam a referir-se a momentos concretos da agenda.</div>
-          <div class="st" id="teamsSt"></div>
-        </div>
-        <div class="switch">
-          <div class="nm">Usar transcrições e atas das reuniões</div>
-          <label class="tg"><input type="checkbox" id="pTr" role="switch"><span></span><span class="sr">Usar transcrições e atas das reuniões</span></label>
-        </div>
-        <div class="foot">Métricas de trabalho e bases de dados da empresa (nível 3) estão fora do âmbito.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<dialog id="fileDlg" aria-labelledby="fileName">
-  <div class="dlg">
-    <header><strong id="fileName"></strong><div class="row"><button type="button" class="btn" id="copyBtn">Copiar</button><button type="button" class="btn" id="closeDlg">Fechar</button></div></header>
-    <div class="dbody" id="fileBody"></div>
-    <footer id="fileFoot"></footer>
-  </div>
-</dialog>
-
-<dialog id="wipeDlg" aria-labelledby="wipeTitle">
-  <form class="dlg wipe" method="dialog" id="wipeForm">
-    <header><strong id="wipeTitle">Apagar dados</strong><button type="button" class="btn" id="wipeX">Cancelar</button></header>
-    <div class="wbody">
-      <fieldset class="scope"><legend>O que queres apagar?</legend>
-        <label><input type="radio" name="wscope" value="semana" checked> <span><b>Check-ins e relatório desta semana</b><br><span class="muted">O perfil e as preferências ficam.</span></span></label>
-        <label><input type="radio" name="wscope" value="tudo"> <span><b>Tudo</b><br><span class="muted">Também o perfil, as responsabilidades e as preferências.</span></span></label>
-      </fieldset>
-      <div><div class="lab2">Vai ser apagado</div><ul class="wlist" id="wipeList"></ul></div>
-      <div class="note" id="wipeLive" hidden></div>
-      <div class="row"><button type="button" class="btn small" id="wipeExport">Ver uma cópia antes de apagar</button></div>
-      <div class="field"><label for="wipeType">Para confirmar, escreve <b class="mono">APAGAR</b></label><input type="text" id="wipeType" autocomplete="off" spellcheck="false"></div>
-    </div>
-    <footer class="wfoot"><span class="muted">Depois de apagar tens 10 segundos para desfazer.</span><button type="button" class="btn danger" id="wipeGo" disabled>Apagar</button></footer>
+<!-- Widget de conversa livre -->
+<button type="button" class="widget-btn" id="widgetBtn" aria-haspopup="dialog" aria-expanded="false">
+  <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 4.5h14v8H8l-3.5 3v-3H3z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+  Perguntar ao agente
+</button>
+<section class="widget" id="widget" role="dialog" aria-label="Conversa livre com o agente" hidden>
+  <header>
+    <div><strong>Conversa livre</strong><span>Pergunta o que quiseres sobre as tuas semanas</span></div>
+    <button type="button" class="iconbtn" id="widgetClose" aria-label="Fechar">
+      <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+  <div class="wlog" id="wlog" aria-live="polite"></div>
+  <div class="werr" id="werr" role="alert" hidden></div>
+  <form class="form wform" id="wform">
+    <label for="wmsg" class="sr">Mensagem</label>
+    <textarea id="wmsg" rows="1" placeholder="Ex.: em que semana falei de reuniões sem agenda?"></textarea>
+    <button type="submit" class="btn primary send" id="wsendBtn">Enviar</button>
   </form>
-</dialog>
+</section>
 
-<div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toastTxt"></span><button type="button" class="btn small" id="toastUndo">Desfazer</button></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toastTxt"></span></div>
 
-<script src="ponte.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
