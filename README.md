@@ -42,6 +42,9 @@ conversa no browser ──▶ servidor Python ──▶ Gemini (Google)
 - `agente/`: o "cérebro" do agente em markdown. Mudar o tom ou as perguntas é editar texto, não código.
 - `memoria/`: o diário. Uma entrada por semana, legível por pessoas e pelo LLM. O cabeçalho de
   cada entrada tem etiquetas de tema, e o código conta as repetições para detetar padrões.
+- O ecrã (`frontend/`) fala com a API real: conversa → resumo gerado pelo LLM (revisto e editado)
+  → semana guardada no diário. Conversas anteriores são retomáveis, há um widget de conversa
+  livre e um `.ics` para pôr a reflexão no calendário (sexta, 17:00).
 - Detalhe completo e contrato de API: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 
 ## Correr localmente

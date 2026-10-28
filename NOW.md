@@ -3,6 +3,22 @@
 > Uma linha por tarefa fechada ou problema encontrado: `T+h:mm · função · o quê`.
 > Pontas soltas na secção de baixo: ninguém sai sem as ver.
 
+## 2026-10-28
+
+- 12:10 · full-stack · **Ecrã de produção contra a API real** (decisão 12, autonomia do Marco):
+  frontend reescrito de raiz — conversa de reflexão (com cartão de fecho gerado pelo `/api/fechar`,
+  prioridades e estados editáveis, guardar no diário do servidor), sidebar com conversas
+  retomáveis (localStorage) + diário (gráfico de energia, prioridades cumpridas, semanas), widget
+  de conversa livre (`modo: "geral"`, prompt novo `agente/GERAL.md`), alerta de bem-estar com
+  cartão de apoio (a const `BEM_ESTAR` continua igual à do backend; teste confere). Saiem a agenda
+  Teams simulada, o perfil/check-ins diários da Marta e o `ponte.js`. `GET /api/llm` substituído
+  por `GET /api/estado`; novo `GET /api/ics` (sexta 17:00 Lisboa, recorrente, prioridades na
+  descrição; `tzdata` no requirements). 7 testes novos (ics + modo geral): **37 verdes**.
+  Verificado no browser em mock (roteiro completo até guardar a W44 + vista de semana + widget +
+  cuidado) e ao vivo com o Gemini (abertura e conversa livre, 2 pedidos). `reset_demo` corrido.
+- 12:05 · decisão 12 registada: o resumo semanal nunca é pré-escrito; conversas anteriores
+  retomáveis; widget geral; `.ics`.
+
 ## 2026-10-27
 
 - 16:15 · pitch · `roadmap.md`: integrações alargadas a suites de trabalho (Microsoft 365,

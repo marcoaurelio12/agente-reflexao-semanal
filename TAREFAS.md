@@ -17,13 +17,15 @@
 
 Ficheiros: `frontend/` · Detalhe: [`frontend/README.md`](frontend/README.md)
 
-- [ ] F1 Chat a funcionar contra o mock (`frontend/mock.js`), até T+0:50
-- [ ] F2 Cartão de fecho: resumo, 3 prioridades editáveis, padrões, ajuste de hábito, botão Guardar
-- [ ] F3 Painel "O teu diário": semanas anteriores, padrões, gráfico da energia
-- [ ] F4 Faixa de privacidade sempre visível
-- [ ] F5 Ligar à API real (T+1:30)
-- [ ] F6 (P1) Métricas no painel · (P2) botão "Resumo do mês"
+- [x] F1 Chat a funcionar contra o mock (`frontend/mock.js`), até T+0:50
+- [x] F2 Cartão de fecho: resumo, 3 prioridades editáveis, padrões, ajuste de hábito, botão Guardar
+- [x] F3 Painel "O teu diário": semanas anteriores, padrões, gráfico da energia
+- [x] F4 Faixa de privacidade sempre visível
+- [x] F5 Ligar à API real (T+1:30)
+- [x] F6 (P1) Métricas no painel · (P2) botão "Resumo do mês" — métricas sim; resumo mensal fica
 - [x] F7 Tirar do ecrã os nomes das ferramentas, os caminhos de ficheiros e o debug (ficam em `reflexaoDiag()` na consola)
+- [x] F8 (pós-hackathon, 2026-10-28) Ecrã reescrito contra a API real: resumo gerado pelo
+  `/api/fechar`, conversas anteriores retomáveis, widget de conversa livre, `.ics`, badge do modo
 
 **Feito =** o roteiro de `pitch/ROTEIRO-DEMO.md` corre do princípio ao fim no browser.
 

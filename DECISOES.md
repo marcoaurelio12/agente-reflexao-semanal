@@ -50,3 +50,13 @@
 10. **Fora de âmbito no código:** login, vários utilizadores, integrações reais (Outlook, Teams),
     base de dados, deploy. Tudo isto aparece como visão no pitch.
 11. **Repo público:** nunca fazer commit do `.env` nem de chaves.
+12. **Passagem a produção do ecrã (2026-10-28 12:05, Marco, com autonomia dada ao assistente):**
+    o frontend deixa de ser uma demo isolada (check-ins diários da "Marta", agenda do Teams
+    simulada, relatório pré-escrito) e passa a falar com a API real (`/api/chat`, `/api/fechar`,
+    `/api/guardar`, `/api/memoria`). O resumo semanal nunca é pré-escrito: vem sempre do
+    `/api/fechar` (LLM ou mock) e é revisto/editado antes de guardar. Conversas anteriores ficam
+    no `localStorage` do navegador e podem ser reabertas e continuadas (o servidor continua sem
+    estado). Widget de conversa livre no canto: `/api/chat` com `modo: "geral"` e o prompt novo
+    `agente/GERAL.md`. Calendário: `GET /api/ics` (sexta, 17:00, Lisboa, recorrente, com as
+    prioridades na descrição). `GET /api/estado` (badge do modo) substitui o `GET /api/llm`;
+    `POST /api/llm` e `frontend/ponte.js` saem do código.

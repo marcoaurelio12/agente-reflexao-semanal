@@ -9,18 +9,16 @@
 
 Estas estavam no plano (MVP/P1/P2) e ficaram a caminho da linha de meta.
 
-1. **Ligar o ecrã à memória real.** O backend tem `/api/chat`, `/api/fechar` e `/api/guardar`
-   prontos e testados, mas o ecrã fala com o modelo por `/api/llm` e a semana guarda-se só no
-   browser: a demo não escreve em `memoria/diario/`. É a próxima tarefa — é o que separa o
-   protótipo do produto.
-2. **Métricas no painel (P1).** Energia semana a semana (gráfico), prioridades cumpridas
-   (X de Y) e número de padrões. A API já as calcula (`GET /api/memoria` devolve `metricas`);
-   falta desenhá-las no painel.
+1. ~~**Ligar o ecrã à memória real.**~~ **Feito a 2026-10-28** (decisão 12): o ecrã novo fala com
+   `/api/chat`, `/api/fechar` e `/api/guardar`; a semana guarda-se em `memoria/diario/`.
+2. ~~**Métricas no painel (P1).**~~ **Feito a 2026-10-28:** energia semana a semana e prioridades
+   cumpridas (X de Y) na sidebar, a partir de `GET /api/memoria`.
 3. **Resumo mensal (P2).** Evolução das prioridades e das aprendizagens nas últimas 4 semanas.
    O `POST /api/resumo-mensal` está previsto no contrato e hoje devolve 501; faltam o fecho do
    endpoint e o botão "Resumo do mês" no painel.
-4. **Lembrete de sexta-feira.** Um aviso (e-mail ou notificação) a abrir a conversa à hora
-   marcada, em vez de a pessoa ter de lembrar-se. Ficou fora por estar dependente de deploy.
+4. **Lembrete de sexta-feira.** Meio caminho feito a 2026-10-28: `GET /api/ics` põe a reflexão
+   recorrente no calendário da pessoa (sexta, 17:00, com as prioridades na descrição). Falta o
+   aviso e-mail/push, que continua dependente de deploy.
 
 ## Visão: ficou fora por decisão, não por acidente
 
