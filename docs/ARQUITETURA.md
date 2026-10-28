@@ -155,6 +155,39 @@ nunca há scores, streaks ou energia diários.
 
 `semanas` vem por ordem cronológica (mais antiga primeiro).
 
+### `DELETE /api/memoria` · `POST /api/memoria/restaurar` («Apagar tudo»)
+
+```json
+// DELETE /api/memoria → 200
+{"token_desfazer": "20261028T150000-1a2b3c"}   // diario/*.md e cópia do INDEX.md foram
+                                               // para memoria/.lixeira/<token>/; INDEX limpo
+// POST /api/memoria/restaurar — {"token_desfazer": "…"} → {"restaurado": true} (token usado → 404)
+```
+
+As conversas do navegador são limpas pelo próprio frontend (não há servidor com estado).
+
+### `GET /api/consentimento` · `PUT /api/consentimento` · `GET /api/consentimento/contexto`
+
+```json
+// GET → o painel «O que o agente sabe sobre ti»
+{"consentimento": {"agenda": false, "conversa_livre": true, "diario_completo_no_widget": false},
+ "atualizado_em": "2026-10-28T13:05:00", "fonte": "memoria/CONSENTIMENTO.md"}
+// PUT — {"consentimento": {…as três chaves, sempre todas, true/false…}} → mesmo objeto do GET
+// GET /api/consentimento/contexto?modo=semanal|geral → {"contexto": "## Quem é a pessoa\n…"}
+```
+
+A fonte é `memoria/CONSENTIMENTO.md` (frontmatter YAML + uma linha de histórico por mudança),
+relido a cada pedido, como os prompts. O consentimento **filtra de facto o contexto**:
+- `agenda: false` (omissão) → a secção «Agenda desta semana» não entra em contexto nenhum;
+- `conversa_livre: false` → `POST /api/chat` com `modo: "geral"` devolve 403 em pt-PT
+  (o frontend esconde o botão do widget);
+- `diario_completo_no_widget: false` (omissão) → o widget lê só as últimas 4 semanas.
+
+`/api/consentimento/contexto` («Ver tudo») devolve só as secções de **dados** montadas na hora
+(pessoa, índice, diário, padrões, agenda se autorizada, notas, semana atual) — sem prompts e
+sem LLM. O 4.º toggle (guardar conversas no navegador) vive no `localStorage` do frontend
+(`reflexao.consentimento.v1`), não no servidor.
+
 ### `GET /api/estado`
 
 ```json
@@ -198,6 +231,13 @@ dia_legivel(data_iso: str) -> str               # "2026-10-27" → "terça, 27 d
 semana_de(data_iso: str) -> str                 # "2026-10-27" → "2026-W44"
 tema_sugerido(texto: str) -> str | None         # matching léxico sobre os nomes de temas.yaml
 insight_de_notas(notas: list[dict]) -> str | None  # 1 linha se ≥2 notas da semana no mesmo tema
+apagar_diario() -> str                          # «Apagar tudo»: diario/*.md + INDEX → memoria/.lixeira/<token>/; devolve o token
+restaurar_diario(token: str) -> bool            # o «Desfazer»: recoloca o diário e o INDEX
+
+# backend/consentimento.py — Backend B
+carregar() -> dict                              # {agenda, conversa_livre, diario_completo_no_widget} de memoria/CONSENTIMENTO.md
+estado() -> dict                                # corpo do GET/PUT /api/consentimento
+guardar(novo: dict) -> dict                     # escreve o .md (3 chaves + linha de histórico)
 
 # backend/padroes.py — Backend B
 detetar(metas: list[dict]) -> list[dict]        # recebe frontmatters por ordem cronológica
@@ -214,8 +254,9 @@ extrair_json(system: str, mensagens: list[dict]) -> dict
 # backend/conversa.py — Backend A
 montar_contexto(nota_extra: str | None = None) -> str
 montar_contexto_fecho() -> str
-montar_contexto_geral() -> str                  # widget: agente/GERAL.md + ACOES.md + segurança + diário completo
+montar_contexto_geral() -> str                  # widget: agente/GERAL.md + ACOES.md + segurança + diário (alcance pelo consentimento)
 montar_contexto_mensal() -> str                 # resumo-mensal: agente/MENSAL.md + diário + padrões + métricas
+montar_contexto_dados(modo: str = "semanal") -> str  # «Ver tudo»: só as secções de dados, sem prompts nem LLM
 resumo_mensal_mock() -> str                     # resumo-mensal sem chave: factos calculados, texto determinístico
 carregar_acoes() -> list[dict]                  # catálogo do bloco yaml de agente/ACOES.md (lido em cada pedido)
 ```
@@ -229,15 +270,20 @@ carregar_acoes() -> list[dict]                  # catálogo do bloco yaml de age
 5. `## Índice do diário` + `memoria/INDEX.md`
 6. `## Diário das últimas semanas` + até 4 entradas completas (mais antiga primeiro)
 7. `## Padrões já detetados` + `padroes.detetar()` sobre as semanas anteriores
-8. `## Agenda desta semana` + `memoria/agenda/<semana atual>.md`, se existir (P1)
+8. `## Agenda desta semana` + `memoria/agenda/<semana atual>.md`, se existir **e** o
+   consentimento `agenda` estiver ligado (off por omissão — a agenda é só com autorização)
 9. `## Notas desta semana` + as últimas 10 notas de `memoria/notas/` desta semana, se houver
    (`- terça, 28 de outubro: "…"`, com as palavras da pessoa)
 10. `## Semana atual` + id e datas (ex.: 2026-W44, 26 de outubro a 1 de novembro)
 11. Nota de resposta vaga, se for o caso
 
+O consentimento (`memoria/CONSENTIMENTO.md`) é lido em cada pedido e filtra o item 8 em todos
+os contextos e o alcance do diário no widget (`diario_completo_no_widget`).
+
 Contexto do fecho: `agente/FECHO.md` + `agente/temas.yaml` + itens 4, 6, 7, 9 e 10 + a conversa.
 Contexto da conversa livre: `agente/GERAL.md` + `agente/ACOES.md` + `agente/SEGURANCA.md` +
-itens 4, 5, 6, 7, 8, 9 e 10 (diário completo, não só as últimas 4 semanas).
+itens 4, 5, 6, 7, 8, 9 e 10 (diário completo com `diario_completo_no_widget`, senão as
+últimas 4 semanas).
 Contexto do resumo mensal: `agente/MENSAL.md` + itens 4, 6 e 7 (últimas 4 semanas guardadas) +
 secção de métricas (energia por semana, prioridades cumpridas).
 Os ficheiros são lidos em cada pedido, para a equipa afinar os prompts sem reiniciar o servidor.

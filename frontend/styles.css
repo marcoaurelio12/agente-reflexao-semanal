@@ -224,6 +224,29 @@ button{cursor:pointer}
 .dlg .iconbtn{display:grid;width:28px;height:28px}
 .dlg-body{padding:14px 16px 16px;font-size:13.5px;white-space:pre-wrap;overflow-wrap:break-word;max-height:60vh;overflow-y:auto}
 
+/* ── Diálogo do consentimento ──────────── */
+.dlg-consent{width:min(600px,calc(100vw - 32px))}
+.dlg-consent .dlg-body{white-space:normal}
+.privacy-btn{display:block;margin-top:6px;text-align:left}
+.cintro{margin:0 0 4px}
+.csec{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;margin:10px 0}
+.csec h4{margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3)}
+.clista{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-direction:column;gap:4px;font-size:13px}
+.ctexto{margin:0;font-size:13px}
+.tog{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-top:1px dashed var(--line);font-size:13px;cursor:pointer}
+.tog:first-of-type{border-top:0}
+.tog input{accent-color:var(--accent);width:15px;height:15px;flex:none}
+.tog .tt{font-weight:500}
+.tog em{font-style:normal;font-size:11.5px;color:var(--ink-3)}
+.tog.mini{border-top:0;padding:0 0 0 6px;display:inline-flex}
+.caccoes{margin-top:12px}
+.btn.perigo{border-color:var(--alert);color:var(--alert)}
+.btn.perigo:hover{background:var(--alert-soft)}
+.btn.perigo.certo{background:var(--alert);border-color:var(--alert);color:var(--surface)}
+.vertdo{margin-top:12px}
+.vertdo pre{max-height:260px;overflow:auto;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:8px;padding:10px;font-family:var(--f-mono);font-size:11.5px;white-space:pre-wrap;overflow-wrap:break-word;margin:6px 0 0}
+
 /* ── Alerta e cuidado ─────────────────── */
 .care{max-width:72ch;margin:0 auto 14px;background:var(--good-soft);border-radius:12px;padding:14px 16px}
 .care h4{margin:0 0 8px;font-size:13.5px}

@@ -50,6 +50,7 @@
     <footer class="privacy">
       Dados fictícios (persona de demonstração). O diário fica em markdown neste servidor —
       sem bases de dados, sem contas, sem a chefia ver nada.
+      <button type="button" class="linkbtn privacy-btn" id="privacidadeBtn">O que o agente sabe sobre ti</button>
     </footer>
   </aside>
 
@@ -148,6 +149,56 @@
       <button type="submit" class="btn primary" id="notaGuardar">Guardar nota</button>
     </div>
   </form>
+</dialog>
+
+<!-- O que o agente sabe sobre ti (consentimento) -->
+<dialog class="dlg dlg-consent" id="consentDialog" aria-label="O que o agente sabe sobre ti">
+  <header class="dlg-head">
+    <div><strong>O que o agente sabe sobre ti</strong><span>o que lê, o que é enviado, o que fica guardado</span></div>
+    <button type="button" class="iconbtn" id="consentClose" aria-label="Fechar">
+      <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+  <div class="dlg-body">
+    <p class="muted cintro">O agente só trabalha com o que está aqui. Nada disto vai para a chefia.</p>
+
+    <section class="csec">
+      <h4>O agente lê</h4>
+      <ul class="clista">
+        <li>O que escreves na conversa (o histórico inteiro, a cada mensagem)</li>
+        <li>O diário: quem és, o índice e as últimas 4 semanas guardadas</li>
+        <li>As notas que deixares durante a semana</li>
+      </ul>
+      <label class="tog"><input type="checkbox" id="togAgenda"><span class="tt">A agenda desta semana</span><em>só com a tua autorização</em></label>
+      <label class="tog"><input type="checkbox" id="togGeral"><span class="tt">Conversa livre (widget)</span><em>desligada: o widget desaparece</em></label>
+      <label class="tog"><input type="checkbox" id="togCompleto"><span class="tt">Widget com o diário completo</span><em>desligado: só as últimas 4 semanas</em></label>
+    </section>
+
+    <section class="csec">
+      <h4>É enviado ao Gemini <span class="hint" id="consentModo"></span></h4>
+      <p class="ctexto">As tuas mensagens + as secções de memória acima, montadas no pedido. Em modo «respostas de exemplo», nada sai do computador.</p>
+    </section>
+
+    <section class="csec">
+      <h4>Fica guardado</h4>
+      <ul class="clista">
+        <li>Neste navegador: as conversas e a conversa livre
+          <label class="tog mini"><input type="checkbox" id="togLocal" checked><span class="tt">guardar conversas</span></label></li>
+        <li>No servidor: só o resumo de cada semana e as notas; a transcrição nunca é guardada</li>
+      </ul>
+    </section>
+
+    <div class="row caccoes">
+      <button type="button" class="btn" id="verTudoBtn">Ver tudo</button>
+      <button type="button" class="btn" id="exportarBtn">Exportar tudo</button>
+      <button type="button" class="btn perigo" id="apagarBtn">Apagar tudo</button>
+      <button type="button" class="btn primary" id="desfazerBtn" hidden>Desfazer apagar tudo</button>
+    </div>
+    <div class="vertdo" id="verTudoBox" hidden>
+      <p class="hint">Texto integral das secções de memória, montadas agora. Os prompts (<span class="mono">agente/*.md</span>) são públicos no repo.</p>
+      <pre id="verTudoPre"></pre>
+    </div>
+  </div>
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toastTxt"></span></div>

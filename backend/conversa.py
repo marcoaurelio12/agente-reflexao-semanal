@@ -8,7 +8,7 @@ from pathlib import Path
 
 import yaml
 
-from backend import memoria, padroes
+from backend import consentimento, memoria, padroes
 
 RAIZ = Path(__file__).resolve().parent.parent
 PASTA_AGENTE = RAIZ / "agente"
@@ -54,12 +54,14 @@ def _secao_notas() -> str | None:
 
 def montar_contexto(nota_extra: str | None = None) -> str:
     """System prompt da conversa: prompts de agente/ + diário + padrões + agenda + notas + semana (+ nota)."""
+    c = consentimento.carregar()
     s = _secoes_memoria(semanas_anteriores())
     partes = [_agente("AGENTE.md"), _agente("PERGUNTAS.md"), _agente("SEGURANCA.md"),
               s["pessoa"], s["index"], s["diario"], s["padroes"]]
-    agenda = memoria.carregar_agenda(memoria.semana_atual()[0])
-    if agenda:
-        partes.append("## Agenda desta semana\n\n" + agenda.strip())
+    if c["agenda"]:
+        agenda = memoria.carregar_agenda(memoria.semana_atual()[0])
+        if agenda:
+            partes.append("## Agenda desta semana\n\n" + agenda.strip())
     notas = _secao_notas()
     if notas:
         partes.append(notas)
@@ -79,13 +81,44 @@ def montar_contexto_fecho() -> str:
 
 
 def montar_contexto_geral() -> str:
-    """System prompt da conversa livre (widget): agente/GERAL.md + segurança + diário completo."""
-    s = _secoes_memoria(listar_diario_completo())
+    """System prompt da conversa livre (widget): agente/GERAL.md + segurança + diário completo.
+
+    O consentimento decide o alcance: sem `diario_completo_no_widget` o widget lê só as
+    últimas 4 semanas; sem `agenda` a agenda não entra (como na reflexão semanal).
+    """
+    c = consentimento.carregar()
+    semanas = listar_diario_completo() if c["diario_completo_no_widget"] else semanas_anteriores()
+    s = _secoes_memoria(semanas)
     partes = [_agente("GERAL.md"), _agente("ACOES.md"), _agente("SEGURANCA.md"),
               s["pessoa"], s["index"], s["diario"], s["padroes"]]
-    agenda = memoria.carregar_agenda(memoria.semana_atual()[0])
-    if agenda:
-        partes.append("## Agenda desta semana\n\n" + agenda.strip())
+    if c["agenda"]:
+        agenda = memoria.carregar_agenda(memoria.semana_atual()[0])
+        if agenda:
+            partes.append("## Agenda desta semana\n\n" + agenda.strip())
+    notas = _secao_notas()
+    if notas:
+        partes.append(notas)
+    partes.append(s["semana"])
+    return "\n\n".join(partes)
+
+
+def montar_contexto_dados(modo: str = "semanal") -> str:
+    """«Ver tudo»: só as secções de memória que o agente recebe, montadas na hora.
+
+    Sem prompts (são públicos no repo) e sem LLM. `modo` decide o alcance do diário, como no
+    contexto real da conversa correspondente.
+    """
+    c = consentimento.carregar()
+    if modo == "geral":
+        semanas = listar_diario_completo() if c["diario_completo_no_widget"] else semanas_anteriores()
+    else:
+        semanas = semanas_anteriores()
+    s = _secoes_memoria(semanas)
+    partes = [s["pessoa"], s["index"], s["diario"], s["padroes"]]
+    if c["agenda"]:
+        agenda = memoria.carregar_agenda(memoria.semana_atual()[0])
+        if agenda:
+            partes.append("## Agenda desta semana\n\n" + agenda.strip())
     notas = _secao_notas()
     if notas:
         partes.append(notas)

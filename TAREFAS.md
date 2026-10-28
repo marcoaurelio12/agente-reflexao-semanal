@@ -95,6 +95,6 @@ Implementadas pelo assistente com a autonomia do Marco; cada uma segue a propost
   `notas_temas` no fecho, regra `nota_recorrente`, sidebar e widget, `tests/test_notas.py`
 - [ ] FN2 Notas do dia (`notas-do-dia.md`): `memoria/notas/`, `/api/notas`, secção no contexto,
   `notas_temas` no fecho, regra `nota_recorrente`, sidebar e widget, `tests/test_notas.py`
-- [ ] FC3 Painel de consentimento (`consentimento.md`): `memoria/CONSENTIMENTO.md`,
+- [x] FC3 Painel de consentimento (`consentimento.md`): `memoria/CONSENTIMENTO.md`,
   `/api/consentimento*`, toggles que filtram o contexto, lixeira + desfazer, diálogo
   "O que o agente sabe sobre ti", `tests/test_consentimento.py`

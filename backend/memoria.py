@@ -5,7 +5,9 @@ Dono: Backend B (tarefa B1). Contrato em docs/ARQUITETURA.md §Interfaces intern
 import json
 import os
 import re
+import shutil
 import unicodedata
+import uuid
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -18,6 +20,7 @@ PASTA_MEMORIA = RAIZ / "memoria"
 PASTA_DIARIO = PASTA_MEMORIA / "diario"
 PASTA_AGENDA = PASTA_MEMORIA / "agenda"
 PASTA_NOTAS = PASTA_MEMORIA / "notas"
+PASTA_LIXEIRA = PASTA_MEMORIA / ".lixeira"
 PASTA_AGENTE = RAIZ / "agente"
 FICHEIRO_CONTEXTO = PASTA_MEMORIA / "CONTEXTO.md"
 FICHEIRO_INDEX = PASTA_MEMORIA / "INDEX.md"
@@ -28,6 +31,7 @@ load_dotenv(RAIZ / ".env")
 FUSO = ZoneInfo("Europe/Lisbon")
 ID_SEMANA = re.compile(r"^\d{4}-W\d{2}$")
 ID_NOTA = re.compile(r"^(\d{4}-\d{2}-\d{2})-(\d+)$")
+TOKEN_LIXEIRA = re.compile(r"^[A-Za-z0-9_-]+$")
 LINHA_NOTA = re.compile(r"^-\s*(\d{2}:\d{2}) — (.*)$")
 MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto",
          "setembro", "outubro", "novembro", "dezembro"]
@@ -268,6 +272,49 @@ def _apagar_notas_da_semana(semana_id: str) -> None:
             continue
         if dentro:
             caminho.unlink()
+
+
+# ---------------------------------------------------------------------------
+# «Apagar tudo» com lixeira: o diário sai de diario/ para memoria/.lixeira/<token>/
+# e volta com «Desfazer» (token = nome da pasta). Sem bases de dados: são ficheiros.
+# ---------------------------------------------------------------------------
+
+def apagar_diario() -> str:
+    """Move diario/*.md (e uma cópia do INDEX.md) para memoria/.lixeira/<token>/ e limpa o INDEX.
+
+    Devolve o token (nome da pasta) para o «Desfazer».
+    """
+    token = datetime.now().strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:6]
+    pasta = PASTA_LIXEIRA / token
+    pasta.mkdir(parents=True, exist_ok=True)
+    for caminho in sorted(PASTA_DIARIO.glob("*.md")):
+        shutil.move(str(caminho), str(pasta / caminho.name))
+    shutil.copy(str(FICHEIRO_INDEX), str(pasta / "INDEX.md"))
+    linhas = [l for l in carregar_index().splitlines() if not l.startswith("- [")]
+    FICHEIRO_INDEX.write_text("\n".join(linhas) + "\n", encoding="utf-8", newline="\n")
+    return token
+
+
+def restaurar_diario(token: str) -> bool:
+    """Recoloca tudo o que está em memoria/.lixeira/<token>/ (o «Desfazer»).
+
+    O INDEX.md volta ao estado de antes do apagar. False se o token não existir.
+    """
+    if not TOKEN_LIXEIRA.match(token):
+        raise ValueError(f"token inválido: {token!r}")
+    pasta = PASTA_LIXEIRA / token
+    if not pasta.is_dir():
+        return False
+    PASTA_DIARIO.mkdir(parents=True, exist_ok=True)
+    for caminho in sorted(pasta.glob("*.md")):
+        if caminho.name == "INDEX.md":
+            continue
+        shutil.move(str(caminho), str(PASTA_DIARIO / caminho.name))
+    indice = pasta / "INDEX.md"
+    if indice.exists():
+        shutil.move(str(indice), str(FICHEIRO_INDEX))
+    shutil.rmtree(pasta, ignore_errors=True)
+    return True
 
 
 def meta_de(semana: dict) -> dict:

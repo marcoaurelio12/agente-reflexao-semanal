@@ -58,8 +58,10 @@ function rotuloConv(ms){
 }
 
 /* ───────── Estado ───────── */
-const K_CONVS = "reflexao.conversas.v1", K_GERAL = "reflexao.geral.v1";
+const K_CONVS = "reflexao.conversas.v1", K_GERAL = "reflexao.geral.v1", K_CONSENT = "reflexao.consentimento.v1";
 let ESTADO = null, MEMORIA = null, NOTAS = null;
+let CONSENT = null;                  // {agenda, conversa_livre, diario_completo_no_widget} do servidor
+let LOCAL = { guardar_conversas: true };  // toggle só do navegador
 let convs = [], ativa = null;        // conversas de reflexão (a "ativa" está aberta no ecrã)
 let GERAL = { msgs: [] };            // thread da conversa livre (widget)
 let vista = "conversa", semanaAberta = null, semanaMarkdown = "";
@@ -67,7 +69,8 @@ let busy = false, wbusy = false;
 
 function carregar(k, padrao){ try{ const r = localStorage.getItem(k); return r ? JSON.parse(r) : clone(padrao); }catch(e){ return clone(padrao); } }
 function guardar(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
-const salvarConvs = () => guardar(K_CONVS, convs);
+// com «guardar conversas» desligado, a conversa aberta fica só em memória (efémera)
+const salvarConvs = () => guardar(K_CONVS, convs.filter(c => !c.efemera));
 const salvarGeral = () => guardar(K_GERAL, GERAL);
 const convAtiva = () => convs.find(c => c.id === ativa) || null;
 
@@ -108,8 +111,9 @@ function renderTopo(){
   b.title = ESTADO.disponivel ? `As mensagens são escritas por ${ESTADO.modelo}` : "Sem chave do modelo no servidor: respostas pré-escritas";
 }
 function renderSidebar(){
-  // conversas, da mais recente para a mais antiga
-  $("#convList").innerHTML = convs.length ? convs.map(c => {
+  // conversas, da mais recente para a mais antiga (as efémeras só existem nesta sessão)
+  const lista = convs.filter(c => !c.efemera);
+  $("#convList").innerHTML = lista.length ? lista.map(c => {
     const rot = rotuloConv(c.criadaEm);
     const estado = c.guardada ? "guardada" : c.pronto ? "resumo pronto" : c.terminada ? "terminada" : "em curso";
     return `<li><button type="button" class="conv${c.id === ativa && vista === "conversa" ? " on" : ""}" data-id="${c.id}" aria-current="${c.id === ativa && vista === "conversa"}">
@@ -247,6 +251,7 @@ async function guardarSemana(){
     conv.guardada = true;
     conv.ficheiro = r.ficheiro;
     toast("Semana guardada em " + r.ficheiro);
+    if (!LOCAL.guardar_conversas) conv.efemera = true;  // sai do localStorage, fica só nesta sessão
     await carregarMemoria();
     await carregarNotas();  // as notas da semana são apagadas ao guardar (fica o essencial no diário)
   }catch(e){
@@ -654,6 +659,151 @@ $("#widgetClose").onclick = () => { $("#widget").hidden = true; $("#widgetBtn").
 /* ───────── Memória do servidor ───────── */
 async function carregarMemoria(){ MEMORIA = await api("/api/memoria"); renderSidebar(); if (vista === "conversa") renderLog(); }
 
+/* ───────── Consentimento: «O que o agente sabe sobre ti» ───────── */
+function aplicarConversaLivre(){
+  const pode = !CONSENT || CONSENT.conversa_livre;
+  $("#widgetBtn").hidden = !pode;
+  if (!pode){
+    $("#widget").hidden = true;
+    $("#widgetBtn").setAttribute("aria-expanded", "false");
+  }
+}
+function renderConsent(){
+  if (!CONSENT) return;
+  $("#togAgenda").checked = !!CONSENT.agenda;
+  $("#togGeral").checked = !!CONSENT.conversa_livre;
+  $("#togCompleto").checked = !!CONSENT.diario_completo_no_widget;
+  $("#togLocal").checked = !!LOCAL.guardar_conversas;
+  $("#consentModo").textContent = ESTADO && ESTADO.disponivel
+    ? "(agora: " + ESTADO.modelo + ")" : "(agora: respostas de exemplo)";
+}
+async function carregarConsent(){
+  try{ CONSENT = (await api("/api/consentimento")).consentimento; }
+  catch(e){ CONSENT = null; }
+  aplicarConversaLivre();
+  renderConsent();
+}
+async function porConsent(){
+  // escreve sempre as três opções (contrato do PUT)
+  CONSENT = { agenda: $("#togAgenda").checked, conversa_livre: $("#togGeral").checked,
+              diario_completo_no_widget: $("#togCompleto").checked };
+  try{
+    const r = await api("/api/consentimento", { consentimento: CONSENT }, "PUT");
+    CONSENT = r.consentimento;
+    toast("Preferências guardadas.");
+  }catch(e){
+    toast("Não consegui guardar as preferências (" + e.message + ").");
+  }
+  aplicarConversaLivre();
+  renderConsent();
+}
+["togAgenda", "togGeral", "togCompleto"].forEach(id =>
+  $("#" + id).addEventListener("change", () => porConsent()));
+$("#togLocal").addEventListener("change", () => {
+  LOCAL.guardar_conversas = $("#togLocal").checked;
+  guardar(K_CONSENT, LOCAL);
+  salvarConvs();
+});
+$("#privacidadeBtn").onclick = () => { renderConsent(); $("#consentDialog").showModal(); };
+$("#consentClose").onclick = () => $("#consentDialog").close();
+$("#consentDialog").addEventListener("click", e => { if (e.target === $("#consentDialog")) $("#consentDialog").close(); });
+
+$("#verTudoBtn").onclick = async () => {
+  const box = $("#verTudoBox");
+  if (box.hidden === false){ box.hidden = true; return; }
+  box.hidden = false;
+  $("#verTudoPre").textContent = "a montar…";
+  try{
+    const r = await api("/api/consentimento/contexto?modo=semanal");
+    $("#verTudoPre").textContent = r.contexto;
+  }catch(e){
+    $("#verTudoPre").textContent = "Não consegui montar o contexto (" + e.message + ").";
+  }
+};
+
+$("#exportarBtn").onclick = async () => {
+  try{
+    const [mem, cons] = await Promise.all([api("/api/memoria"), api("/api/consentimento")]);
+    const dados = {
+      exportado_em: new Date().toISOString(),
+      o_que_e: "Exportação completa: conversas deste navegador, diário e consentimento do servidor.",
+      consentimento_servidor: cons.consentimento,
+      consentimento_navegador: LOCAL,
+      conversas: convs.filter(c => !c.efemera),
+      conversa_livre: GERAL,
+      memoria: mem
+    };
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(dados, null, 2)], { type: "application/json" }));
+    a.download = "reflexao-semanal-tudo-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }catch(e){
+    toast("Não consegui exportar (" + e.message + ").");
+  }
+};
+
+let tokenDesfazer = null, backupApagar = null, apagarTimer = null;
+function _resetBotaoApagar(){
+  const b = $("#apagarBtn");
+  delete b.dataset.confirmado;
+  b.textContent = "Apagar tudo";
+  b.classList.remove("certo");
+}
+$("#apagarBtn").onclick = async () => {
+  const btn = $("#apagarBtn");
+  if (btn.dataset.confirmado !== "1"){
+    btn.dataset.confirmado = "1";        // 1.º clique: pede confirmação
+    btn.textContent = "Tens a certeza? Clica outra vez";
+    btn.classList.add("certo");
+    setTimeout(_resetBotaoApagar, 5000);
+    return;
+  }
+  _resetBotaoApagar();
+  backupApagar = { convs: clone(convs), geral: clone(GERAL), ativa };
+  try{
+    const r = await api("/api/memoria", null, "DELETE");  // 2.º clique: apaga (com lixeira)
+    tokenDesfazer = r.token_desfazer;
+  }catch(e){
+    toast("Não consegui apagar (" + e.message + ").");
+    return;
+  }
+  convs = []; ativa = null; GERAL = { msgs: [] };
+  localStorage.removeItem(K_CONVS);
+  localStorage.removeItem(K_GERAL);
+  $("#chatTitle").textContent = "Reflexão apagada";
+  $("#chatSub").textContent = "";
+  $("#log").innerHTML = '<div class="readonly">Diário e conversas apagados. Quando quiseres, começa uma «Nova reflexão» — ou desfaz nos próximos 15 segundos.</div>';
+  await carregarMemoria();
+  await carregarNotas();
+  renderSidebar();
+  $("#desfazerBtn").hidden = false;
+  clearTimeout(apagarTimer);
+  apagarTimer = setTimeout(() => { $("#desfazerBtn").hidden = true; tokenDesfazer = null; }, 15000);
+};
+$("#desfazerBtn").onclick = async () => {
+  if (!tokenDesfazer) return;
+  try{
+    await api("/api/memoria/restaurar", { token_desfazer: tokenDesfazer });
+    convs = backupApagar.convs || [];
+    GERAL = backupApagar.geral || { msgs: [] };
+    ativa = backupApagar.ativa && convs.some(c => c.id === backupApagar.ativa) ? backupApagar.ativa : null;
+    salvarConvs(); salvarGeral();
+    await carregarMemoria();
+    await carregarNotas();
+    if (ativa) abrirConversa(ativa);
+    else renderSidebar();
+    tokenDesfazer = null;
+    clearTimeout(apagarTimer);
+    $("#desfazerBtn").hidden = true;
+    toast("Tudo restaurado.");
+  }catch(e){
+    toast("Não consegui restaurar (" + e.message + ").");
+  }
+};
+
 /* ───────── Eventos ───────── */
 $("#novaBtn").onclick = () => novaConversa();
 $("#convList").addEventListener("click", e => {
@@ -699,9 +849,11 @@ ligarForm("#wform", "#wmsg", enviarGeral);
   }
   GERAL = carregar(K_GERAL, { msgs: [] });
   convs = carregar(K_CONVS, []);
+  LOCAL = carregar(K_CONSENT, { guardar_conversas: true });
   renderTopo();
   renderSidebar();
   carregarNotas();
+  carregarConsent();  // esconde o widget se a conversa livre estiver desligada
   if (convs.length) abrirConversa(convs[0].id);
   else novaConversa();
 })();

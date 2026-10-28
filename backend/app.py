@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from backend import conversa, llm, memoria, padroes, seguranca
+from backend import consentimento, conversa, llm, memoria, padroes, seguranca
 
 RAIZ = Path(__file__).resolve().parent.parent
 NOTA_VAGA = "A última resposta foi vaga: faz UMA pergunta de seguimento concreta; não assumas nada."
@@ -45,6 +45,14 @@ class PedidoGuardar(BaseModel):
 class PedidoNota(BaseModel):
     texto: str
     data: str | None = None  # AAAA-MM-DD; omissão: hoje
+
+
+class PedidoConsentimento(BaseModel):
+    consentimento: dict  # {agenda, conversa_livre, diario_completo_no_widget}, sempre todas
+
+
+class PedidoToken(BaseModel):
+    token_desfazer: str
 
 
 def _erro_llm(e: Exception) -> HTTPException:
@@ -87,6 +95,8 @@ def chat(pedido: PedidoChat):
             return {"resposta": alerta["resposta"], "pronto_para_fechar": False,
                     "alerta_seguranca": True, "acoes": []}
     geral = pedido.modo == "geral"
+    if geral and not consentimento.carregar()["conversa_livre"]:
+        raise HTTPException(403, "A conversa livre está desligada nas opções de privacidade.")
     nota = None if geral else (NOTA_VAGA if ultima and seguranca.e_vaga(ultima) else None)
     if geral and llm.modo_mock():
         texto = _MOCK_GERAL
@@ -224,6 +234,58 @@ def ver_memoria():
         "padroes": padroes.detetar(metas),
         "metricas": padroes.metricas(metas),
     }
+
+
+@app.delete("/api/memoria")
+def apagar_memoria():
+    """«Apagar tudo» (servidor): o diário vai para a lixeira e o INDEX fica limpo.
+
+    Devolve o token para o «Desfazer» (POST /api/memoria/restaurar). As conversas do
+    navegador são apagadas pelo próprio frontend.
+    """
+    return {"token_desfazer": memoria.apagar_diario()}
+
+
+@app.post("/api/memoria/restaurar")
+def restaurar_memoria(pedido: PedidoToken):
+    """O «Desfazer» do «Apagar tudo»: recoloca o diário e o INDEX de antes."""
+    try:
+        restitui = memoria.restaurar_diario(pedido.token_desfazer)
+    except ValueError as e:
+        raise HTTPException(400, f"Pedido inválido: {e}")
+    if not restitui:
+        raise HTTPException(404, "Esse pedido de desfazer já não existe.")
+    return {"restaurado": True}
+
+
+# ---------------------------------------------------------------------------
+# Consentimento: o que o agente pode ler (memoria/CONSENTIMENTO.md)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/consentimento")
+def ver_consentimento():
+    """Toggles do servidor (lidos do .md a cada pedido) — o painel «O que o agente sabe sobre ti»."""
+    return consentimento.estado()
+
+
+@app.put("/api/consentimento")
+def por_consentimento(pedido: PedidoConsentimento):
+    """Escreve as três opções (sempre todas, true/false) em memoria/CONSENTIMENTO.md."""
+    c = pedido.consentimento
+    faltam = [k for k in consentimento.CHAVES if k not in c]
+    a_mais = set(c) - set(consentimento.CHAVES)
+    if faltam or a_mais or not all(isinstance(c[k], bool) for k in consentimento.CHAVES):
+        raise HTTPException(400, "Envia as três opções — agenda, conversa_livre e "
+                                 "diario_completo_no_widget — com true ou false em cada uma.")
+    return consentimento.guardar(c)
+
+
+@app.get("/api/consentimento/contexto")
+def contexto_consentimento(modo: str = "semanal"):
+    """«Ver tudo»: as secções de memória montadas na hora (dados, não prompts), sem LLM."""
+    if modo not in ("semanal", "geral"):
+        raise HTTPException(400, "modo tem de ser semanal ou geral.")
+    return {"contexto": conversa.montar_contexto_dados(modo)}
 
 
 @app.get("/api/estado")

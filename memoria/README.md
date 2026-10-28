@@ -13,12 +13,20 @@ Em ficheiros markdown nesta pasta, no computador onde corre o servidor. Não há
 | `diario/AAAA-Www.md` | Uma entrada de diário por semana (ex.: `2026-W43` = 19 a 25 de outubro) |
 | `agenda/AAAA-Www.md` | Agenda da semana (fictícia; numa versão real viria do calendário, com autorização) |
 | `notas/AAAA-MM-DD.md` | Notas do dia (1-3 linhas, escritas pela pessoa); só existem os dias anotados |
+| `CONSENTIMENTO.md` | O que o agente pode ler (toggles); lido a cada pedido |
+| `.lixeira/<token>/` | O diário do «Apagar tudo» até ao «Desfazer» (o token é o nome da pasta) |
 
 **Notas do dia:** um ficheiro por dia com notas (`- HH:MM — texto literal`). O tema no
 frontmatter é sugestão automática (matching léxico sobre `agente/temas.yaml`); a nota nunca é
 resumo nem transcrição — são as palavras da pessoa. Ao guardar a semana, os ficheiros de notas
 dessa semana são apagados: fica o essencial (`temas.notas`) no frontmatter do diário. Sem linha
 no `INDEX.md` (o índice é do diário semanal; notas são efémeras).
+
+**Consentimento:** `CONSENTIMENTO.md` guarda três toggles no frontmatter (agenda,
+conversa_livre, diario_completo_no_widget) e uma linha de histórico por mudança. Omissões:
+agenda desligada («a agenda só com autorização» é mecanismo, não promessa), conversa livre
+ligada, widget só com as últimas 4 semanas. O backend lê-o a cada pedido e filtra o contexto
+de facto.
 
 Cada entrada do diário tem duas partes:
 - **Cabeçalho (frontmatter YAML):** energia, etiquetas de tema e padrões. É o que o código usa

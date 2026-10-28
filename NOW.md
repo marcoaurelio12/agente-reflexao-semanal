@@ -5,6 +5,27 @@
 
 ## 2026-10-28
 
+- 15:12 · full-stack · **Painel de consentimento «O que o agente sabe sobre ti»** (proposta
+  `docs/propostas/consentimento.md`, decisões pela recomendação: agenda off por omissão, apagar
+  tudo com lixeira + desfazer, CONSENTIMENTO.md com frontmatter, «Ver tudo» só dados com nota
+  de que os prompts são públicos, diálogo sobreposto): `memoria/CONSENTIMENTO.md` + módulo
+  `backend/consentimento.py` (relido a cada pedido); `GET/PUT /api/consentimento` (as 3 chaves
+  sempre todas; PUT incompleto/tipos errados → 400) e `GET /api/consentimento/contexto?modo=`
+  (pessoa, índice, diário, padrões, agenda se autorizada, notas, semana atual — sem prompts).
+  Os toggles filtram DE FACTO: agenda off → a secção não entra em contexto nenhum (antes
+  entrava sempre — a promessa «só com autorização» virou mecanismo; na demo, ligá-la ao vivo é
+  momento de pitch); conversa_livre off → `/api/chat` geral dá 403 em pt-PT e o widget
+  desaparece; diario_completo_no_widget decide 4 semanas vs diário todo. «Apagar tudo»:
+  `DELETE /api/memoria` move diario/*.md + cópia do INDEX para `memoria/.lixeira/<token>/` e
+  limpa o INDEX; `POST /api/memoria/restaurar` recoloca tudo (token usado → 404); o frontend
+  confirma em 2 passos, limpa o localStorage e dá «Desfazer» 15 s. Toggle «guardar conversas»
+  só no navegador (`reflexao.consentimento.v1`): desligado, a conversa guardada sai do
+  localStorage ao guardar a semana. «Exportar tudo»: JSON único gerado no cliente (conversas +
+  `GET /api/memoria` + consentimento). `reset_demo` recoloca o diário da lixeira se um ensaio
+  do «Apagar tudo» ficou por desfazer. `tests/test_consentimento.py`: **75 verdes**.
+  `ARQUITETURA.md` (§API nova, §Contexto, §Interfaces) e READMEs de memoria/ e frontend/ no
+  mesmo commit. Nota: com a agenda off por omissão, a abertura da demo já não menciona a
+  agenda — ligar o toggle ao vivo (ou pôr `agenda: true` no .md) para o momento do pitch.
 - 14:39 · full-stack · **Notas do dia** (proposta `docs/propostas/notas-do-dia.md`, decisões pela
   recomendação: apagar ao guardar a semana, matching léxico + confirmação no fecho, entradas na
   sidebar E no widget, um ficheiro por dia, contexto limitado às últimas 10): `memoria/notas/
