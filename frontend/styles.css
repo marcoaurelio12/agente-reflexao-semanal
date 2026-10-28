@@ -256,13 +256,14 @@ button{cursor:pointer;touch-action:manipulation}
 .wsec p{margin:0;font-size:13.5px}
 
 /* ── Widget de conversa livre ─────────── */
-.widget-btn{position:fixed;right:20px;bottom:20px;z-index:40;border:0;border-radius:var(--r-pill);background:var(--accent);
+/* acima do composer (~68px): o canto do "Enviar" fica sempre livre */
+.widget-btn{position:fixed;right:20px;bottom:92px;z-index:40;border:0;border-radius:var(--r-pill);background:var(--accent);
   color:var(--on-accent);padding:11px 18px;min-height:42px;font-size:13.5px;font-weight:600;display:flex;
   align-items:center;gap:8px;box-shadow:var(--shadow-2);transition:filter .13s ease,box-shadow .13s ease}
 .widget-btn:hover{filter:brightness(1.06)}
 .widget-btn svg{flex:none}
-.widget{position:fixed;right:20px;bottom:78px;z-index:41;width:min(380px,calc(100vw - 32px));
-  height:min(540px,calc(100vh - 118px));height:min(540px,calc(100dvh - 118px));
+.widget{position:fixed;right:20px;bottom:148px;z-index:41;width:min(380px,calc(100vw - 32px));
+  height:min(540px,calc(100vh - 196px));height:min(540px,calc(100dvh - 196px));
   min-height:300px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-3);
   display:flex;flex-direction:column;overflow:hidden;transform-origin:100% 100%}
 .widget:not([hidden]){animation:pop-in .16s ease}
@@ -376,10 +377,10 @@ button{cursor:pointer;touch-action:manipulation}
   /* o iOS não faz zoom ao focar se a fonte for ≥16px */
   .form textarea,.nota-form textarea,.prow input,.tresumo{font-size:16px}
 
-  /* widget por cima de tudo, sem tocar na faixa nem no botão flutuante */
-  .widget-btn{right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px))}
-  .widget{right:14px;left:14px;width:auto;bottom:calc(68px + env(safe-area-inset-bottom,0px));
-    height:min(560px,calc(100vh - 180px));height:min(560px,calc(100dvh - 180px))}
+  /* widget por cima de tudo, sem tocar na faixa nem no composer */
+  .widget-btn{right:14px;bottom:calc(82px + env(safe-area-inset-bottom,0px))}
+  .widget{right:14px;left:14px;width:auto;bottom:calc(138px + env(safe-area-inset-bottom,0px));
+    height:min(560px,calc(100vh - 208px));height:min(560px,calc(100dvh - 208px))}
   .toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 }
 /* sem hover (toque): as ações que apareciam ao passar o rato ficam sempre visíveis */

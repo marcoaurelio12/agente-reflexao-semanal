@@ -5,6 +5,16 @@
 
 ## 2026-10-28
 
+- 16:20 · frontend · **Passagem de qualidade visual** (agente, commit `b8251cb`, + retoques da
+  revisão): escala de raios e legendas tokenizada, estados vazios com texto calmo, foco visível
+  em tudo (inclui os × só-hover, agora sempre visíveis em toque), alvos de toque ≥40px e inputs
+  a 16px no mobile, sombras e ::backdrop em tokens com valores próprios para escuro (contraste
+  --ink-3 ≥4.5), layout vertical do mobile reescrito (a topbar mede 66px, não 59 — transbordava),
+  gaveta ancorada ao .layout, micro-interações ≤160ms com prefers-reduced-motion, truncagem e
+  quebras em textos longos; corrigido um .cs sem display:block (subtítulo colado ao título).
+  Retoques da revisão no browser: o botão «Perguntar ao agente» e o painel passam a flutuar
+  acima do composer (cobria o «Enviar» a partir de ~1080px; sem interseção a 980/1080/1280) e o
+  placeholder do widget encurtado. pytest 75 verdes; BEM_ESTAR intocado (teste confere).
 - 15:12 · full-stack · **Painel de consentimento «O que o agente sabe sobre ti»** (proposta
   `docs/propostas/consentimento.md`, decisões pela recomendação: agenda off por omissão, apagar
   tudo com lixeira + desfazer, CONSENTIMENTO.md com frontmatter, «Ver tudo» só dados com nota
