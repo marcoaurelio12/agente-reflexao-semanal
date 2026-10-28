@@ -23,7 +23,7 @@ def detetar(metas: list[dict]) -> list[dict]:
     """Padrões nas últimas JANELA semanas. Recebe frontmatters por ordem cronológica.
 
     Devolve [{"tipo", "tema", "semanas", "mensagem"}]; tipos: bloqueio_recorrente ·
-    aprendizagem_a_consolidar · prioridade_que_transita · energia_em_queda.
+    aprendizagem_a_consolidar · nota_recorrente · prioridade_que_transita · energia_em_queda.
     """
     janela = metas[-JANELA:]
     if not janela:
@@ -48,6 +48,16 @@ def detetar(metas: list[dict]) -> list[dict]:
             padroes.append({
                 "tipo": "aprendizagem_a_consolidar", "tema": tema, "semanas": semanas,
                 "mensagem": f"«{nomes.get(tema, tema)}» aparece como aprendizagem {quando}.",
+            })
+
+    # Notas: contam como menção (a pessoa escreveu-as), não como facto classificado —
+    # o mesmo tema em temas.notas em ≥2 semanas da janela.
+    for tema, semanas in _ocorrencias(janela, "notas").items():
+        if len(semanas) >= 2:
+            padroes.append({
+                "tipo": "nota_recorrente", "tema": tema, "semanas": semanas,
+                "mensagem": f"«{nomes.get(tema, tema)}» aparece em notas de {len(semanas)} "
+                            f"das últimas {len(janela)} semanas.",
             })
 
     for tema in _ocorrencias(janela, "prioridades"):

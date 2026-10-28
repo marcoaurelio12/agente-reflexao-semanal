@@ -10,6 +10,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, HTTPException, Response
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -39,6 +40,11 @@ class PedidoChat(BaseModel):
 
 class PedidoGuardar(BaseModel):
     semana: dict
+
+
+class PedidoNota(BaseModel):
+    texto: str
+    data: str | None = None  # AAAA-MM-DD; omissão: hoje
 
 
 def _erro_llm(e: Exception) -> HTTPException:
@@ -118,6 +124,8 @@ def fechar(pedido: PedidoChat):
              "tema": i.get("tema") if i.get("tema") in temas_validos else "outro"}
             for i in (dados.get(campo) or []) if isinstance(i, dict)
         ]
+    dados["notas_temas"] = [t for t in (dados.get("notas_temas") or [])
+                            if isinstance(t, str) and t in temas_validos][:3]
     sid, periodo = memoria.semana_atual()
     semana = {
         "semana": sid,
@@ -132,6 +140,7 @@ def fechar(pedido: PedidoChat):
         "resumo": dados.get("resumo") or "",
         "prioridades": dados["prioridades"],
         "ajuste_habito": dados.get("ajuste_habito") or "",
+        "notas_temas": dados["notas_temas"],
     }
     metas = [s["meta"] for s in conversa.semanas_anteriores()] + [memoria.meta_de(semana)]
     semana["padroes"] = padroes.detetar(metas)
@@ -145,6 +154,52 @@ def guardar(pedido: PedidoGuardar):
         return {"ficheiro": memoria.guardar_semana(pedido.semana)}
     except (ValueError, KeyError, TypeError) as e:
         raise HTTPException(400, f"Semana inválida: {e}")
+
+
+@app.post("/api/notas", status_code=201)
+def criar_nota(pedido: PedidoNota):
+    """Guarda uma nota do dia (literal, com a hora). Sem resposta do agente, sem pergunta.
+
+    O filtro de bem-estar corre primeiro: com alerta, NÃO guarda e devolve a resposta de apoio.
+    """
+    alerta = seguranca.verificar(pedido.texto)
+    if alerta:
+        # não guarda; devolve a resposta de apoio (200, não 201: não foi criado nada)
+        return JSONResponse(status_code=200,
+                            content={"alerta_seguranca": True, "nivel": alerta["nivel"],
+                                     "resposta": alerta["resposta"]})
+    try:
+        nota = memoria.guardar_nota(pedido.texto, pedido.data)
+        da_semana = memoria.notas_da_semana(memoria.semana_de(nota["data"]))
+    except ValueError as e:
+        raise HTTPException(400, f"Nota inválida: {e}")
+    return {"id": nota["id"], "data": nota["data"], "hora": nota["hora"],
+            "texto": nota["texto"], "tema_sugerido": nota["tema"],
+            "insight": memoria.insight_de_notas(da_semana)}
+
+
+@app.get("/api/notas")
+def listar_notas(semana: str | None = None):
+    """Notas da semana indicada (ou da atual) e o insight diário (uma linha, já calculada)."""
+    try:
+        notas = memoria.notas_da_semana(semana)
+    except ValueError as e:
+        raise HTTPException(400, f"Semana inválida: {e}")
+    return {"notas": [{"id": n["id"], "data": n["data"], "hora": n["hora"],
+                       "texto": n["texto"], "tema_sugerido": n["tema"]} for n in notas],
+            "insight": memoria.insight_de_notas(notas)}
+
+
+@app.delete("/api/notas/{nid}", status_code=204)
+def apagar_nota(nid: str):
+    """Remove a nota (reescreve o ficheiro do dia; a última apaga o ficheiro)."""
+    try:
+        apagou = memoria.apagar_nota(nid)
+    except ValueError as e:
+        raise HTTPException(400, f"Nota inválida: {e}")
+    if not apagou:
+        raise HTTPException(404, "Essa nota já não existe.")
+    return Response(status_code=204)
 
 
 @app.get("/api/memoria")

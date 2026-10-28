@@ -43,14 +43,26 @@ def _secoes_memoria(anteriores: list[dict]) -> dict[str, str]:
     }
 
 
+def _secao_notas() -> str | None:
+    """## Notas desta semana (últimas 10, com o dia e as palavras da pessoa); None sem notas."""
+    notas = memoria.notas_da_semana()
+    if not notas:
+        return None
+    linhas = [f'- {memoria.dia_legivel(n["data"])}: "{n["texto"]}"' for n in notas[-10:]]
+    return "## Notas desta semana\n\n" + "\n".join(linhas)
+
+
 def montar_contexto(nota_extra: str | None = None) -> str:
-    """System prompt da conversa: prompts de agente/ + diário + padrões + agenda + semana atual (+ nota)."""
+    """System prompt da conversa: prompts de agente/ + diário + padrões + agenda + notas + semana (+ nota)."""
     s = _secoes_memoria(semanas_anteriores())
     partes = [_agente("AGENTE.md"), _agente("PERGUNTAS.md"), _agente("SEGURANCA.md"),
               s["pessoa"], s["index"], s["diario"], s["padroes"]]
     agenda = memoria.carregar_agenda(memoria.semana_atual()[0])
     if agenda:
         partes.append("## Agenda desta semana\n\n" + agenda.strip())
+    notas = _secao_notas()
+    if notas:
+        partes.append(notas)
     partes.append(s["semana"])
     if nota_extra:
         partes.append(nota_extra)
@@ -58,10 +70,12 @@ def montar_contexto(nota_extra: str | None = None) -> str:
 
 
 def montar_contexto_fecho() -> str:
-    """System prompt do fecho: agente/FECHO.md + temas.yaml + contexto, diário, padrões e semana atual."""
+    """System prompt do fecho: agente/FECHO.md + temas.yaml + contexto, diário, notas, padrões e semana."""
     s = _secoes_memoria(semanas_anteriores())
     temas = "## Temas permitidos (agente/temas.yaml)\n\n```yaml\n" + _agente("temas.yaml") + "\n```"
-    return "\n\n".join([_agente("FECHO.md"), temas, s["pessoa"], s["diario"], s["padroes"], s["semana"]])
+    notas = _secao_notas()
+    return "\n\n".join([_agente("FECHO.md"), temas, s["pessoa"], s["diario"],
+                        *( [notas] if notas else [] ), s["padroes"], s["semana"]])
 
 
 def montar_contexto_geral() -> str:
@@ -72,6 +86,9 @@ def montar_contexto_geral() -> str:
     agenda = memoria.carregar_agenda(memoria.semana_atual()[0])
     if agenda:
         partes.append("## Agenda desta semana\n\n" + agenda.strip())
+    notas = _secao_notas()
+    if notas:
+        partes.append(notas)
     partes.append(s["semana"])
     return "\n\n".join(partes)
 

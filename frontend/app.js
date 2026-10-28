@@ -59,7 +59,7 @@ function rotuloConv(ms){
 
 /* ───────── Estado ───────── */
 const K_CONVS = "reflexao.conversas.v1", K_GERAL = "reflexao.geral.v1";
-let ESTADO = null, MEMORIA = null;
+let ESTADO = null, MEMORIA = null, NOTAS = null;
 let convs = [], ativa = null;        // conversas de reflexão (a "ativa" está aberta no ecrã)
 let GERAL = { msgs: [] };            // thread da conversa livre (widget)
 let vista = "conversa", semanaAberta = null, semanaMarkdown = "";
@@ -72,15 +72,19 @@ const salvarGeral = () => guardar(K_GERAL, GERAL);
 const convAtiva = () => convs.find(c => c.id === ativa) || null;
 
 /* ───────── API ───────── */
-async function api(url, corpo){
-  const r = await fetch(url, corpo == null ? undefined : {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo)
-  });
+async function api(url, corpo, metodo){
+  const temCorpo = corpo != null;
+  const r = await fetch(url, temCorpo || metodo ? {
+    method: metodo || "POST",
+    headers: temCorpo ? { "Content-Type": "application/json" } : undefined,
+    body: temCorpo ? JSON.stringify(corpo) : null
+  } : undefined);
   if (!r.ok){
     let detalhe = "";
     try{ detalhe = (await r.json()).detail || ""; }catch(e){}
     throw new Error(detalhe || `erro ${r.status}`);
   }
+  if (r.status === 204) return null;
   return r.json();
 }
 
@@ -244,6 +248,7 @@ async function guardarSemana(){
     conv.ficheiro = r.ficheiro;
     toast("Semana guardada em " + r.ficheiro);
     await carregarMemoria();
+    await carregarNotas();  // as notas da semana são apagadas ao guardar (fica o essencial no diário)
   }catch(e){
     conv.erroGuardar = "Não consegui guardar (" + e.message + ").";
   }
@@ -262,10 +267,13 @@ const TIPO_PADRAO = { bloqueio_recorrente: ["rec", "Bloqueio recorrente"], apren
                       prioridade_que_transita: ["trans", "Prioridade que transita"], energia_em_queda: ["ener", "Energia"] };
 const ESTADOS_PRIO = { "feito": "feito", "em-parte": "em parte", "nao-avancou": "não avançou", "sem-info": "sem info" };
 
-function bolha(m){
+function bolha(m, comNota){
   const who = m.role === "assistant" ? "Agente" : "Tu";
   const corpo = m.content == null ? '<span class="thinking" aria-label="A escrever"><i></i><i></i><i></i></span>' : esc(m.content);
-  return `<div class="msg ${m.role}${m.falha ? " falha" : ""}"><div class="who">${who}</div><div class="bubble">${corpo}</div>${m.falha ? '<div class="errline">Não foi enviada.</div>' : ""}</div>`;
+  // no widget, cada mensagem da pessoa pode virar nota do dia (hover)
+  const nota = comNota && m.role === "user" && m.content != null && !m.falha
+    ? '<button type="button" class="notabtn" title="Guardar como nota do dia" aria-label="Guardar como nota do dia">✚ nota</button>' : "";
+  return `<div class="msg ${m.role}${m.falha ? " falha" : ""}"><div class="who">${who}</div><div class="bubble">${corpo}</div>${m.falha ? '<div class="errline">Não foi enviada.</div>' : ""}${nota}</div>`;
 }
 function cartaoCuidado(nivel){
   const lis = ['<li>Alguém de confiança, dentro ou fora do trabalho</li><li>O teu médico de família</li>',
@@ -448,6 +456,84 @@ async function verResumoMensal(){
 $("#mensalBtn").onclick = verResumoMensal;
 $("#mensalClose").onclick = () => $("#mensalDialog").close();
 $("#mensalDialog").addEventListener("click", e => { if (e.target === $("#mensalDialog")) $("#mensalDialog").close(); });
+
+/* ───────── Notas do dia ───────── */
+function rotuloDia(iso){
+  const d = dataIso(iso), h = hoje();
+  if (d.toDateString() === h.toDateString()) return "hoje";
+  const ontem = new Date(h.getFullYear(), h.getMonth(), h.getDate() - 1);
+  if (d.toDateString() === ontem.toDateString()) return "ontem";
+  return `${d.getDate()} ${MES_CURTO(d.getMonth() + 1)}`;
+}
+function renderNotas(){
+  const box = $("#notasCard");
+  if (!NOTAS || !NOTAS.notas || !NOTAS.notas.length){ box.hidden = true; box.innerHTML = ""; return; }
+  // agrupadas por dia, como na proposta ("hoje", "ontem", data)
+  const grupos = [];
+  NOTAS.notas.forEach(n => {
+    const rot = rotuloDia(n.data);
+    let g = grupos[grupos.length - 1];
+    if (!g || g.rot !== rot){ g = { rot, itens: [] }; grupos.push(g); }
+    g.itens.push(n);
+  });
+  box.hidden = false;
+  box.innerHTML = grupos.map(g =>
+    `<div class="ngrupo"><div class="ndia">${esc(g.rot)}</div><ul>` +
+    g.itens.map(n => `<li><span class="nhora">${esc(n.hora)}</span><span class="ntxt">${esc(n.texto)}</span>
+      <button type="button" class="del" data-nota="${esc(n.id)}" aria-label="Apagar a nota" title="Apagar">×</button></li>`).join("")
+    + "</ul></div>").join("")
+    + (NOTAS.insight ? `<p class="ninsight">${esc(NOTAS.insight)}</p>` : "");
+  // 2 cliques, como apagar conversas
+  $$("#notasCard [data-nota]").forEach(b => b.onclick = () => {
+    if (b.dataset.confirmado) apagarNota(b.dataset.nota);
+    else { b.dataset.confirmado = "1"; b.textContent = "apagar?"; b.classList.add("certo"); }
+  });
+}
+async function carregarNotas(){
+  try{ NOTAS = await api("/api/notas"); }
+  catch(e){ NOTAS = null; }
+  renderNotas();
+}
+async function apagarNota(id){
+  try{ await api("/api/notas/" + encodeURIComponent(id), null, "DELETE"); }
+  catch(e){ toast("Não consegui apagar a nota (" + e.message + ")."); }
+  carregarNotas();
+}
+async function guardarNota(texto, deOnde){
+  try{
+    const r = await api("/api/notas", { texto });
+    if (r && r.alerta_seguranca){
+      // mal-estar sério: a nota não é guardada; mostra-se a resposta de apoio
+      if (deOnde === "widget"){
+        GERAL.msgs.push({ role: "assistant", content: r.resposta });
+        salvarGeral(); renderWidget();
+      } else toast(r.resposta, 12);
+      return;
+    }
+    toast("Nota guardada para a reflexão de sexta");
+    await carregarNotas();
+  }catch(e){
+    toast("Não consegui guardar a nota (" + e.message + ").");
+  }
+}
+$("#notaBtn").onclick = () => {
+  const dlg = $("#notaDialog");
+  if (!dlg.open) dlg.showModal();
+  $("#notaTexto").value = "";
+  $("#notaTexto").focus();
+};
+$("#notaClose").onclick = () => $("#notaDialog").close();
+$("#notaDialog").addEventListener("click", e => { if (e.target === $("#notaDialog")) $("#notaDialog").close(); });
+$("#notaTexto").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); $("#notaForm").requestSubmit(); }
+});
+$("#notaForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = $("#notaTexto").value.trim();
+  if (!v) return;
+  $("#notaDialog").close();
+  guardarNota(v, "sidebar");
+});
 function mdLeve(linha){
   return esc(linha)
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
@@ -496,7 +582,7 @@ function renderWidget(){
   const intro = '<div class="wintro">Pergunta o que quiseres sobre as tuas semanas — prioridades, padrões, o que disseste e quando.</div>';
   let h = intro;
   GERAL.msgs.forEach((m, i) => {
-    h += bolha(m);
+    h += bolha(m, true);
     // chips de ações sugeridas: só na última bolha do agente, enquanto não forem usados
     if (i === GERAL.msgs.length - 1 && m.role === "assistant" && m.content != null
         && !m.acoesUsadas && m.acoes && m.acoes.length){
@@ -507,6 +593,11 @@ function renderWidget(){
   });
   $("#wlog").innerHTML = h;
   $$("#wlog .chip").forEach(b => b.onclick = () => usarChip(+b.dataset.chip));
+  $$("#wlog .notabtn").forEach(b => b.onclick = () => {
+    const li = b.closest(".msg"), idx = $$("#wlog .msg").indexOf(li);
+    const m = GERAL.msgs[idx];
+    if (m && m.content) guardarNota(m.content, "widget");
+  });
   $("#wlog").scrollTop = $("#wlog").scrollHeight;
   const ta = $("#wmsg"), send = $("#wsendBtn");
   ta.disabled = wbusy; send.disabled = wbusy;
@@ -610,6 +701,7 @@ ligarForm("#wform", "#wmsg", enviarGeral);
   convs = carregar(K_CONVS, []);
   renderTopo();
   renderSidebar();
+  carregarNotas();
   if (convs.length) abrirConversa(convs[0].id);
   else novaConversa();
 })();

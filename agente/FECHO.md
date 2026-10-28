@@ -19,7 +19,8 @@ temas permitidos (`temas.yaml`). Devolves APENAS um objeto JSON, sem texto à vo
     {"texto": "…", "tema": "…"},
     {"texto": "…", "tema": "…"}
   ],
-  "ajuste_habito": "Experimenta …"
+  "ajuste_habito": "Experimenta …",
+  "notas_temas": ["id de temas.yaml"]
 }
 ```
 
@@ -42,3 +43,7 @@ entrada em `memoria/diario/` com o mesmo formato das semanas anteriores.
 6. **Temas:** usa só ids de `temas.yaml`. Se nenhum servir, `outro`.
 7. **Prioridades anteriores:** uma entrada por cada prioridade da semana passada, com o estado
    que a pessoa descreveu.
+8. **Notas desta semana:** se houver notas no contexto, etiqueta os temas que nelas aparecem
+   em `notas_temas` (máximo 3, ids de `temas.yaml`; sem notas → lista vazia). As notas foram
+   escritas pela pessoa: são material legítimo para o resumo, itens e prioridades, sempre com
+   as palavras dela e sem distinguir a origem.

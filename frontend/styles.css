@@ -49,6 +49,10 @@ button{cursor:pointer}
 .sidebar{border-right:1px solid var(--line);background:var(--surface);overflow-y:auto;display:flex;flex-direction:column;padding:14px 12px 0;scrollbar-width:thin}
 .side-sec{margin-bottom:20px}
 .side-sec h2{font-family:var(--f-display);font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin:0 0 8px 8px}
+.diario-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.diario-head h2{margin:0 0 8px 8px;flex:1}
+.addnota{border:1px dashed var(--line);background:none;border-radius:8px;padding:3px 8px;font-size:11px;color:var(--ink-2);flex:none}
+.addnota:hover{border-color:var(--ink-3);color:var(--ink)}
 .convs,.weeks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
 .convs li{display:flex;align-items:stretch;gap:2px}
 .convs .conv{flex:1;min-width:0;text-align:left;border:0;background:none;border-radius:8px;padding:7px 8px;display:flex;flex-direction:column;gap:1px}
@@ -72,6 +76,29 @@ button{cursor:pointer}
 .energia-card .lb{fill:var(--ink-2);font-size:9px}
 .energia-card .leg{font-size:11px;color:var(--ink-3);margin:4px 2px 0}
 .meta{margin:0 8px 8px;font-size:12px;color:var(--ink-2)}
+
+/* ── Notas do dia (sidebar) ───────────── */
+.notas-card{margin:0 4px 10px;border:1px solid var(--line);border-radius:var(--r);padding:10px 10px 8px;background:var(--surface-2)}
+.notas-card::before{content:"Notas desta semana";display:block;font-family:var(--f-display);font-size:11px;font-weight:600;
+  letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:4px}
+.notas-card .ndia{font-size:11px;color:var(--ink-3);margin:6px 0 2px}
+.notas-card ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.notas-card li{display:flex;gap:8px;align-items:flex-start;font-size:12.5px}
+.notas-card .nhora{color:var(--ink-3);font-size:11px;flex:none;padding-top:1px;font-family:var(--f-mono)}
+.notas-card .ntxt{flex:1;min-width:0;overflow-wrap:break-word}
+.notas-card .del{border:0;background:none;color:var(--ink-3);width:20px;border-radius:6px;font-size:14px;line-height:1;visibility:hidden;flex:none}
+.notas-card li:hover .del{visibility:visible}
+.notas-card .del:hover{color:var(--alert);background:var(--alert-soft)}
+.notas-card .del.certo{visibility:visible;color:var(--alert);font-size:10.5px;width:auto;padding:0 4px}
+.ninsight{font-size:11.5px;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin:8px 0 2px}
+.nota-form{display:flex;flex-direction:column;gap:10px}
+.nota-form textarea{resize:vertical;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:9px 12px;font-size:13.5px}
+.nota-form textarea:focus{border-color:var(--accent);outline:none;background:var(--surface)}
+.notabtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;font-size:10.5px;color:var(--ink-3);
+  padding:2px 8px;margin-top:3px;visibility:hidden;align-self:flex-end;flex:none}
+.msg.user:hover .notabtn{visibility:visible}
+.notabtn:hover{color:var(--accent);border-color:var(--accent)}
+
 .mensal-btn{display:block;width:calc(100% - 8px);margin:0 4px 10px;border:1px dashed var(--line);background:none;
   border-radius:8px;padding:6px 8px;font-size:12px;color:var(--ink-2)}
 .mensal-btn:hover{border-color:var(--ink-3);color:var(--ink)}

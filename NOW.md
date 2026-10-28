@@ -5,6 +5,23 @@
 
 ## 2026-10-28
 
+- 14:39 · full-stack · **Notas do dia** (proposta `docs/propostas/notas-do-dia.md`, decisões pela
+  recomendação: apagar ao guardar a semana, matching léxico + confirmação no fecho, entradas na
+  sidebar E no widget, um ficheiro por dia, contexto limitado às últimas 10): `memoria/notas/
+  AAAA-MM-DD.md` (literal, com hora, temas sugeridos por matching léxico recalculado à leitura);
+  `POST/GET/DELETE /api/notas` com `tema_sugerido` como na proposta e filtro de bem-estar ao
+  guardar (com alerta não guarda; devolve a resposta de apoio com 200, não 201); secção
+  `## Notas desta semana` nos 3 contextos (`- terça, 27 de outubro: "…"`); `notas_temas` (máx. 3,
+  ids validados) no `/api/fechar` → `temas.notas` no frontmatter; `guardar_semana` apaga as notas
+  da semana; regra `nota_recorrente` em `padroes.py` (mesmo mecanismo dos bloqueios; notas são
+  menção, não facto classificado — não criam bloqueios); sidebar com "+ Nota do dia" (diálogo),
+  lista por dia (hoje/ontem/data) com × de 2 cliques e linha de insight; "✚ nota" no hover das
+  mensagens da pessoa no widget. `reset_demo` apaga também as notas da W44. Prompts: `AGENTE.md`
+  (passo 0 refere UM evento OU UMA nota com o dia; silêncio não é falha), `FECHO.md`
+  (`notas_temas`), `GERAL.md` (citar notas com o dia). `tests/test_notas.py`: **66 verdes**
+  (desvio da proposta registado: ids de nota renomeados por posição ao apagar; o POST aceita
+  `data` opcional para ensaios/determinismo). `ARQUITETURA.md` (§API notas, §Contexto, §Regras,
+  §Interfaces, formato do diário) e `memoria/README.md` no mesmo commit.
 - 14:03 · full-stack · **Botões de sugestão no chat** (proposta `docs/propostas/sugestoes-no-chat.md`,
   decisões do Marco pela recomendação: só o widget, `abrir-reflexao` entra, clique = mensagem do
   catálogo, chips voltam ao reabrir enquanto não usados): `agente/ACOES.md` novo (catálogo yaml +

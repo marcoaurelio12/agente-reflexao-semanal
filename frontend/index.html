@@ -37,9 +37,13 @@
       <ul class="convs" id="convList"></ul>
     </section>
     <section class="side-sec">
-      <h2>O teu diário</h2>
+      <div class="diario-head">
+        <h2>O teu diário</h2>
+        <button type="button" class="addnota" id="notaBtn" title="Escrever uma nota curta de hoje; a reflexão de sexta lê-a">+ Nota do dia</button>
+      </div>
       <div class="energia-card" id="energiaCard" hidden></div>
       <p class="meta" id="prioMeta" hidden></p>
+      <div class="notas-card" id="notasCard" hidden></div>
       <button type="button" class="mensal-btn" id="mensalBtn">Resumo do mês</button>
       <ul class="weeks" id="weekList"></ul>
     </section>
@@ -126,6 +130,24 @@
     </button>
   </header>
   <div class="dlg-body" id="mensalTexto" aria-live="polite"></div>
+</dialog>
+
+<!-- Nota do dia (1 a 3 linhas; sem resposta do agente) -->
+<dialog class="dlg dlg-nota" id="notaDialog" aria-label="Nota do dia">
+  <header class="dlg-head">
+    <div><strong>Nota do dia</strong><span>1 a 3 linhas com as tuas palavras; a reflexão de sexta lê-a</span></div>
+    <button type="button" class="iconbtn" id="notaClose" aria-label="Fechar">
+      <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+  <form class="dlg-body nota-form" id="notaForm">
+    <label for="notaTexto" class="sr">Texto da nota</label>
+    <textarea id="notaTexto" rows="3" placeholder="Ex.: outra manhã sem bloco de foco; reuniões de última hora."></textarea>
+    <div class="row sp">
+      <span class="hint">Enter guarda · Shift+Enter muda de linha</span>
+      <button type="submit" class="btn primary" id="notaGuardar">Guardar nota</button>
+    </div>
+  </form>
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toastTxt"></span></div>

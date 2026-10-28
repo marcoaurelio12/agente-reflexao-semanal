@@ -88,6 +88,7 @@ não ganha campo novo); `tipo: "navegacao"` (`abrir-reflexao`) não envia nada �
   "resumo": "…",
   "prioridades": [{"texto": "…", "tema": "entregas"}, {"texto": "…", "tema": "dizer-nao"}, {"texto": "…", "tema": "foco-manha"}],
   "ajuste_habito": "Experimenta …",
+  "notas_temas": ["reunioes-excessivas"],
   "padroes": [{"tipo": "bloqueio_recorrente", "tema": "reunioes-excessivas",
                "semanas": ["2026-W41", "2026-W43", "2026-W44"],
                "mensagem": "«Reuniões a mais ou sem agenda» aparece como bloqueio em 3 das últimas 4 semanas."}]
@@ -95,7 +96,10 @@ não ganha campo novo); `tipo: "navegacao"` (`abrir-reflexao`) não envia nada �
 ```
 
 `estado` ∈ `feito` · `em-parte` · `nao-avancou` · `sem-info`.
-`tipo` de padrão ∈ `bloqueio_recorrente` · `aprendizagem_a_consolidar` · `prioridade_que_transita` · `energia_em_queda`.
+`tipo` de padrão ∈ `bloqueio_recorrente` · `aprendizagem_a_consolidar` · `nota_recorrente` ·
+`prioridade_que_transita` · `energia_em_queda`.
+`notas_temas`: ids de `agente/temas.yaml` (máx. 3) etiquetados pelo LLM na mesma chamada do
+fecho a partir das notas desta semana; vai para `temas.notas` do frontmatter ao guardar.
 
 ### `POST /api/guardar`
 
@@ -105,6 +109,32 @@ não ganha campo novo); `tipo: "navegacao"` (`abrir-reflexao`) não envia nada �
 // resposta
 {"ficheiro": "memoria/diario/2026-W44.md"}
 ```
+
+Ao guardar, as notas dessa semana são apagadas (fica o essencial, `temas.notas`, no frontmatter).
+
+### `POST /api/notas` · `GET /api/notas` · `DELETE /api/notas/{id}`
+
+```json
+// POST /api/notas — {"texto": "outra vez reuniões de última hora", "data": "2026-10-28"}
+//   (data é opcional; omissão = hoje) → 201
+{"id": "2026-10-28-1", "data": "2026-10-28", "hora": "09:12", "texto": "…",
+ "tema_sugerido": "reunioes-excessivas", "insight": null}
+// com mal-estar sério no texto: NÃO guarda e devolve 200
+{"alerta_seguranca": true, "nivel": "apoio", "resposta": "…resposta fixa de agente/SEGURANCA.md…"}
+
+// GET /api/notas?semana=2026-W44   (omissão: semana atual)
+{"notas": [{"id": "…", "data": "…", "hora": "…", "texto": "…", "tema_sugerido": "…"}],
+ "insight": "«Reuniões a mais ou sem agenda» saiu em 2 notas desta semana."}
+
+// DELETE /api/notas/2026-10-28-1 → 204 (reescreve o ficheiro do dia; a última nota apaga-o)
+```
+
+A nota é da pessoa: guarda-se **literal** (uma linha por nota, com a hora) em
+`memoria/notas/AAAA-MM-DD.md`, um ficheiro por dia anotado; sem linha no `INDEX.md`.
+`tema_sugerido` vem de matching léxico (tokens >3 letras, minúsculas, sem acentos) sobre os
+nomes de `agente/temas.yaml`; o fecho da semana é que o confirma (`notas_temas`).
+`insight` é uma única linha calculada (≥2 notas da mesma semana no mesmo tema) ou `null`;
+nunca há scores, streaks ou energia diários.
 
 ### `GET /api/memoria`
 
@@ -157,10 +187,17 @@ carregar_contexto() -> str                      # memoria/CONTEXTO.md
 carregar_index() -> str                         # memoria/INDEX.md
 listar_semanas(ultimas: int = 4) -> list[dict]  # [{"meta": frontmatter, "markdown": str, "resumo": str, "prioridades": [str], "ajuste": str}], cronológica
 carregar_agenda(semana_id: str) -> str | None   # memoria/agenda/<id>.md
-meta_de(semana: dict) -> dict                   # JSON do /api/fechar → formato do frontmatter
-guardar_semana(semana: dict) -> str             # escreve o .md + linha no INDEX.md; devolve caminho relativo
+meta_de(semana: dict) -> dict                   # JSON do /api/fecho → formato do frontmatter (temas incluem notas)
+guardar_semana(semana: dict) -> str             # escreve o .md + linha no INDEX.md; apaga as notas da semana
 semana_atual() -> tuple[str, str]               # ("2026-W44", "2026-10-26 a 2026-11-01"); respeita DEMO_SEMANA
 carregar_temas() -> dict                        # agente/temas.yaml
+guardar_nota(texto: str, data_iso: str | None = None) -> dict   # acrescenta ao ficheiro do dia em memoria/notas/
+notas_da_semana(semana_id: str | None = None) -> list[dict]     # [{"id", "data", "hora", "texto", "tema"}], cronológicas
+apagar_nota(nid: str) -> bool                   # reescreve o ficheiro do dia (a última nota apaga-o)
+dia_legivel(data_iso: str) -> str               # "2026-10-27" → "terça, 27 de outubro"
+semana_de(data_iso: str) -> str                 # "2026-10-27" → "2026-W44"
+tema_sugerido(texto: str) -> str | None         # matching léxico sobre os nomes de temas.yaml
+insight_de_notas(notas: list[dict]) -> str | None  # 1 linha se ≥2 notas da semana no mesmo tema
 
 # backend/padroes.py — Backend B
 detetar(metas: list[dict]) -> list[dict]        # recebe frontmatters por ordem cronológica
@@ -193,12 +230,14 @@ carregar_acoes() -> list[dict]                  # catálogo do bloco yaml de age
 6. `## Diário das últimas semanas` + até 4 entradas completas (mais antiga primeiro)
 7. `## Padrões já detetados` + `padroes.detetar()` sobre as semanas anteriores
 8. `## Agenda desta semana` + `memoria/agenda/<semana atual>.md`, se existir (P1)
-9. `## Semana atual` + id e datas (ex.: 2026-W44, 26 de outubro a 1 de novembro)
-10. Nota de resposta vaga, se for o caso
+9. `## Notas desta semana` + as últimas 10 notas de `memoria/notas/` desta semana, se houver
+   (`- terça, 28 de outubro: "…"`, com as palavras da pessoa)
+10. `## Semana atual` + id e datas (ex.: 2026-W44, 26 de outubro a 1 de novembro)
+11. Nota de resposta vaga, se for o caso
 
-Contexto do fecho: `agente/FECHO.md` + `agente/temas.yaml` + itens 4, 6, 7 e 9 + a conversa.
+Contexto do fecho: `agente/FECHO.md` + `agente/temas.yaml` + itens 4, 6, 7, 9 e 10 + a conversa.
 Contexto da conversa livre: `agente/GERAL.md` + `agente/ACOES.md` + `agente/SEGURANCA.md` +
-itens 4, 5, 6, 7, 8 e 9 (diário completo, não só as últimas 4 semanas).
+itens 4, 5, 6, 7, 8, 9 e 10 (diário completo, não só as últimas 4 semanas).
 Contexto do resumo mensal: `agente/MENSAL.md` + itens 4, 6 e 7 (últimas 4 semanas guardadas) +
 secção de métricas (energia por semana, prioridades cumpridas).
 Os ficheiros são lidos em cada pedido, para a equipa afinar os prompts sem reiniciar o servidor.
@@ -206,10 +245,11 @@ Os ficheiros são lidos em cada pedido, para a equipa afinar os prompts sem rein
 ## Formato do diário
 
 Ver `memoria/diario/2026-W43.md`, que é a referência. Frontmatter: `semana`, `periodo`,
-`registado_em`, `energia`, `temas: {bloqueios, aprendizagens, prioridades}` (listas de ids),
-`prioridades_anteriores: {feitas, parciais, total}`, `padroes`. O corpo tem as secções Resumo ·
-Prioridades da semana passada · Correu bem · Aprendi · Bloqueou · Energia · Prioridades para a
-semana seguinte · Ajuste de hábito · Padrões assinalados.
+`registado_em`, `energia`, `temas: {bloqueios, aprendizagens, prioridades, notas}` (listas de
+ids; `notas` vem do `notas_temas` do fecho), `prioridades_anteriores: {feitas, parciais, total}`,
+`padroes`. O corpo tem as secções Resumo · Prioridades da semana passada · Correu bem · Aprendi ·
+Bloqueou · Energia · Prioridades para a semana seguinte · Ajuste de hábito · Padrões assinalados.
+As notas do dia vivem à parte, em `memoria/notas/AAAA-MM-DD.md` (ver `memoria/README.md`).
 
 ## Regras de padrões (`backend/padroes.py`)
 
@@ -219,6 +259,7 @@ Janela: as últimas 4 semanas, incluindo a atual. Temas neutros (`entregas`, `ou
 |---|---|---|
 | `bloqueio_recorrente` | Mesmo tema em `temas.bloqueios` em ≥2 semanas da janela | «{nome}» aparece como bloqueio em {n} das últimas {janela} semanas. |
 | `aprendizagem_a_consolidar` | Mesmo tema em `temas.aprendizagens` em ≥2 semanas | «{nome}» aparece como aprendizagem em {n} semanas. (2.ª seguida: "pela 2.ª semana seguida") |
+| `nota_recorrente` | Mesmo tema em `temas.notas` em ≥2 semanas da janela (menção, não facto classificado) | «{nome}» aparece em notas de {n} das últimas {janela} semanas. |
 | `prioridade_que_transita` | Mesmo tema em `temas.prioridades` em ≥3 semanas seguidas, até à mais recente | «{nome}» é prioridade há {n} semanas seguidas. |
 | `energia_em_queda` | Energia sempre a descer nas últimas 3 semanas, ou ≤2 nas últimas 2 | A energia desceu de {a} para {b} nas últimas 3 semanas. (nunca diagnóstico) |
 

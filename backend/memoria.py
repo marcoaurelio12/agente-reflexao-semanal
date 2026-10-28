@@ -5,8 +5,10 @@ Dono: Backend B (tarefa B1). Contrato em docs/ARQUITETURA.md §Interfaces intern
 import json
 import os
 import re
-from datetime import date, timedelta
+import unicodedata
+from datetime import date, datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import yaml
 from dotenv import load_dotenv
@@ -15,6 +17,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 PASTA_MEMORIA = RAIZ / "memoria"
 PASTA_DIARIO = PASTA_MEMORIA / "diario"
 PASTA_AGENDA = PASTA_MEMORIA / "agenda"
+PASTA_NOTAS = PASTA_MEMORIA / "notas"
 PASTA_AGENTE = RAIZ / "agente"
 FICHEIRO_CONTEXTO = PASTA_MEMORIA / "CONTEXTO.md"
 FICHEIRO_INDEX = PASTA_MEMORIA / "INDEX.md"
@@ -22,9 +25,13 @@ FICHEIRO_TEMAS = PASTA_AGENTE / "temas.yaml"
 
 load_dotenv(RAIZ / ".env")
 
+FUSO = ZoneInfo("Europe/Lisbon")
 ID_SEMANA = re.compile(r"^\d{4}-W\d{2}$")
+ID_NOTA = re.compile(r"^(\d{4}-\d{2}-\d{2})-(\d+)$")
+LINHA_NOTA = re.compile(r"^-\s*(\d{2}:\d{2}) — (.*)$")
 MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto",
          "setembro", "outubro", "novembro", "dezembro"]
+DIAS = ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"]
 ESTADOS = {"feito": "feito", "em-parte": "em parte", "nao-avancou": "não avançou",
            "sem-info": "sem informação"}
 
@@ -97,6 +104,172 @@ def carregar_agenda(semana_id: str) -> str | None:
     return _ler(caminho) if ID_SEMANA.match(semana_id) and caminho.exists() else None
 
 
+# ---------------------------------------------------------------------------
+# Notas do dia: memoria/notas/AAAA-MM-DD.md, um ficheiro por dia anotado.
+# A nota é da pessoa: guarda-se literal (uma linha por nota), nunca resumo.
+# O tema é sugestão automática por matching léxico (determinística, recalculada
+# à leitura); o fecho da semana é que o confirma em temas.notas.
+# ---------------------------------------------------------------------------
+
+def dia_legivel(data_iso: str) -> str:
+    """"2026-10-27" -> "terça, 27 de outubro"."""
+    d = date.fromisoformat(data_iso)
+    return f"{DIAS[d.weekday()]}, {d.day} de {MESES[d.month - 1]}"
+
+
+def semana_de(data_iso: str) -> str:
+    """"2026-10-27" -> "2026-W44"."""
+    ano, sem, _ = date.fromisoformat(data_iso).isocalendar()
+    return f"{ano}-W{sem:02d}"
+
+
+def _tokens(texto: str) -> set[str]:
+    """Palavras com mais de 3 letras, minúsculas e sem acentos."""
+    sem_acentos = unicodedata.normalize("NFKD", texto or "").encode("ascii", "ignore").decode()
+    return {p for p in re.sub(r"[^\w\s]", " ", sem_acentos.lower()).split() if len(p) > 3}
+
+
+def tema_sugerido(texto: str) -> str | None:
+    """Primeiro tema de temas.yaml cujo nome legível aparece no texto (palavras inteiras).
+
+    Temas neutros ("entregas", "outro") não contam. None se nada bater.
+    """
+    neutros = set((carregar_temas().get("neutros") or {}))
+    palavras = _tokens(texto)
+    for tid, nome in nomes_temas().items():
+        if tid in neutros:
+            continue
+        if _tokens(nome) & palavras:
+            return tid
+    return None
+
+
+def insight_de_notas(notas: list[dict]) -> str | None:
+    """Uma linha se ≥2 notas baterem no mesmo tema; None caso contrário. Sem LLM, sem conselho."""
+    contagens: dict[str, int] = {}
+    for n in notas:
+        if n.get("tema"):
+            contagens[n["tema"]] = contagens.get(n["tema"], 0) + 1
+    if not contagens:
+        return None
+    tema, vezes = max(contagens.items(), key=lambda kv: kv[1])
+    if vezes < 2:
+        return None
+    nomes = nomes_temas()
+    return f"«{nomes.get(tema, tema)}» saiu em {vezes} notas desta semana."
+
+
+def _ler_notas_do_dia(caminho: Path) -> list[dict]:
+    """[{"hora", "texto", "tema"}] das linhas "- HH:MM — texto" do ficheiro do dia."""
+    notas = []
+    for linha in _separar(_ler(caminho))[1].splitlines():
+        m = LINHA_NOTA.match(linha.strip())
+        if m:
+            texto = m.group(2).strip()
+            notas.append({"hora": m.group(1), "texto": texto, "tema": tema_sugerido(texto)})
+    return notas
+
+
+def _escrever_dia_de_notas(caminho: Path, data: str, notas: list[dict]) -> None:
+    temas = list(dict.fromkeys(n["tema"] for n in notas if n.get("tema")))
+    linhas = [
+        "---",
+        f"data: {data}",
+        f"temas: [{', '.join(temas)}]",
+        "---",
+        "",
+        f"# Notas de {dia_legivel(data).split(', ')[1]}",
+        "",
+        *[f"- {n['hora']} — {n['texto']}" for n in notas],
+    ]
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    caminho.write_text("\n".join(linhas) + "\n", encoding="utf-8", newline="\n")
+
+
+def guardar_nota(texto: str, data_iso: str | None = None) -> dict:
+    """Acrescenta uma nota ao dia (ficheiro do dia em memoria/notas/) e devolve-a com id.
+
+    O texto é literal (mudanças de linha colapsadas para manter uma linha por nota). O id é
+    posicional: AAAA-MM-DD-N pela ordem das notas no ficheiro do dia.
+    """
+    agora = datetime.now(FUSO)
+    data = data_iso or agora.date().isoformat()
+    try:
+        date.fromisoformat(data)
+    except ValueError as e:
+        raise ValueError(f"data inválida: {data!r}") from e
+    limpo = " ".join((texto or "").split())
+    if not limpo:
+        raise ValueError("a nota está vazia")
+    caminho = PASTA_NOTAS / f"{data}.md"
+    notas = _ler_notas_do_dia(caminho) if caminho.exists() else []
+    notas.append({"hora": agora.strftime("%H:%M"), "texto": limpo, "tema": tema_sugerido(limpo)})
+    _escrever_dia_de_notas(caminho, data, notas)
+    return {"id": f"{data}-{len(notas)}", "data": data, "hora": notas[-1]["hora"],
+            "texto": limpo, "tema": notas[-1]["tema"]}
+
+
+def notas_da_semana(semana_id: str | None = None) -> list[dict]:
+    """Notas da semana indicada (ou da atual), por ordem cronológica, cada uma com id.
+
+    Só existem ficheiros para os dias anotados (minimização de dados).
+    """
+    sid = semana_id or semana_atual()[0]
+    if not ID_SEMANA.match(sid):
+        raise ValueError(f"semana inválida: {sid!r}")
+    ano, sem = int(sid[:4]), int(sid[6:])
+    inicio = date.fromisocalendar(ano, sem, 1)
+    fim = inicio + timedelta(days=6)
+    notas = []
+    for caminho in sorted(PASTA_NOTAS.glob("*.md")):
+        try:
+            dentro = inicio <= date.fromisoformat(caminho.stem) <= fim
+        except ValueError:
+            continue  # ficheiro com nome que não é data
+        if not dentro:
+            continue
+        for i, n in enumerate(_ler_notas_do_dia(caminho), 1):
+            notas.append({"id": f"{caminho.stem}-{i}", "data": caminho.stem,
+                          "hora": n["hora"], "texto": n["texto"], "tema": n["tema"]})
+    return notas
+
+
+def apagar_nota(nid: str) -> bool:
+    """Remove a nota do dia (reescreve o ficheiro; a última nota apaga o ficheiro)."""
+    m = ID_NOTA.match(nid)
+    if not m:
+        raise ValueError(f"id de nota inválido: {nid!r}")
+    data, n = m.group(1), int(m.group(2))
+    caminho = PASTA_NOTAS / f"{data}.md"
+    if not caminho.exists():
+        return False
+    notas = _ler_notas_do_dia(caminho)
+    if not 1 <= n <= len(notas):
+        return False
+    del notas[n - 1]
+    if notas:
+        _escrever_dia_de_notas(caminho, data, notas)
+    else:
+        caminho.unlink()  # a última nota apaga o ficheiro: o dia deixa de estar anotado
+    return True
+
+
+def _apagar_notas_da_semana(semana_id: str) -> None:
+    """Apaga as notas da semana (chamado ao guardar a semana: fica o essencial no frontmatter)."""
+    if not ID_SEMANA.match(semana_id):
+        return
+    ano, sem = int(semana_id[:4]), int(semana_id[6:])
+    inicio = date.fromisocalendar(ano, sem, 1)
+    fim = inicio + timedelta(days=6)
+    for caminho in PASTA_NOTAS.glob("*.md"):
+        try:
+            dentro = inicio <= date.fromisoformat(caminho.stem) <= fim
+        except ValueError:
+            continue
+        if dentro:
+            caminho.unlink()
+
+
 def meta_de(semana: dict) -> dict:
     """Converte o JSON do /api/fechar para o formato do frontmatter (temas, energia, contagens)."""
     anteriores = semana.get("prioridades_anteriores") or []
@@ -109,6 +282,7 @@ def meta_de(semana: dict) -> dict:
             "bloqueios": [i.get("tema") or "outro" for i in semana.get("bloqueios") or []],
             "aprendizagens": [i.get("tema") or "outro" for i in semana.get("aprendizagens") or []],
             "prioridades": [i.get("tema") or "outro" for i in semana.get("prioridades") or []],
+            "notas": list(semana.get("notas_temas") or []),
         },
         "prioridades_anteriores": {
             "feitas": sum(1 for p in anteriores if p.get("estado") == "feito"),
@@ -157,6 +331,7 @@ def _frontmatter(meta: dict) -> str:
         f"  bloqueios: {_lista_yaml(t['bloqueios'])}",
         f"  aprendizagens: {_lista_yaml(t['aprendizagens'])}",
         f"  prioridades: {_lista_yaml(t['prioridades'])}",
+        f"  notas: {_lista_yaml(t['notas'])}",
         f"prioridades_anteriores: {{feitas: {pa['feitas']}, parciais: {pa['parciais']}, total: {pa['total']}}}",
     ]
     if not meta["padroes"]:
@@ -228,6 +403,7 @@ def guardar_semana(semana: dict) -> str:
     pos = next((i for i, l in enumerate(linhas) if l.startswith("- [")), len(linhas))
     linhas.insert(pos, linha)
     FICHEIRO_INDEX.write_text("\n".join(linhas) + "\n", encoding="utf-8", newline="\n")
+    _apagar_notas_da_semana(sid)  # fica o essencial (temas.notas) no frontmatter
     return f"memoria/diario/{sid}.md"
 
 

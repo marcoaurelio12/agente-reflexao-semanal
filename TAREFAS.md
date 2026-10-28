@@ -91,6 +91,8 @@ Implementadas pelo assistente com a autonomia do Marco; cada uma segue a propost
 
 - [x] FS1 Botões de sugestão no chat (`sugestoes-no-chat.md`): catálogo `agente/ACOES.md`,
   marcador `<<ACOES:…>>` no modo geral, chips no widget, `tests/test_acoes.py`
+- [x] FN2 Notas do dia (`notas-do-dia.md`): `memoria/notas/`, `/api/notas`, secção no contexto,
+  `notas_temas` no fecho, regra `nota_recorrente`, sidebar e widget, `tests/test_notas.py`
 - [ ] FN2 Notas do dia (`notas-do-dia.md`): `memoria/notas/`, `/api/notas`, secção no contexto,
   `notas_temas` no fecho, regra `nota_recorrente`, sidebar e widget, `tests/test_notas.py`
 - [ ] FC3 Painel de consentimento (`consentimento.md`): `memoria/CONSENTIMENTO.md`,
