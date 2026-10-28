@@ -12,7 +12,7 @@
 <body>
 
 <header class="topbar">
-  <button type="button" class="iconbtn" id="menuBtn" aria-label="Conversas e diário" aria-expanded="false">
+  <button type="button" class="iconbtn" id="menuBtn" aria-label="Conversas e diário" aria-expanded="false" aria-controls="sidebar">
     <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
   </button>
   <div class="brand">
@@ -44,6 +44,7 @@
       <div class="energia-card" id="energiaCard" hidden></div>
       <p class="meta" id="prioMeta" hidden></p>
       <div class="notas-card" id="notasCard" hidden></div>
+      <p class="vazio" id="notasVazio">Sem notas nesta semana. O que quiseres lembrar para a reflexão de sexta pode ficar aqui.</p>
       <button type="button" class="mensal-btn" id="mensalBtn">Resumo do mês</button>
       <ul class="weeks" id="weekList"></ul>
     </section>

@@ -120,7 +120,7 @@ function renderSidebar(){
       <span class="ct">${esc(rot.titulo)}<span class="cs">${esc(rot.sub)}</span></span>
       <span class="ce ${c.guardada ? "ok" : ""}">${estado}</span></button>
       <button type="button" class="del" data-del="${c.id}" aria-label="Apagar a conversa de ${esc(rot.titulo)}" title="Apagar">×</button></li>`;
-  }).join("") : '<li class="vazio">Ainda não há conversas.</li>';
+  }).join("") : '<li class="vazio">Ainda não há conversas — começa uma com «Nova reflexão», no topo.</li>';
 
   // diário: gráfico de energia + prioridades cumpridas + semanas
   const met = MEMORIA && MEMORIA.metricas;
@@ -140,7 +140,7 @@ function renderSidebar(){
     ? MEMORIA.semanas.slice().reverse().map(s => `<li><button type="button" class="week${vista === "semana" && semanaAberta === s.semana ? " on" : ""}" data-semana="${esc(s.semana)}">
         <span class="wt">Semana de ${esc(periodoCurto(s.periodo))}</span>
         <span class="we">${s.energia != null ? "⚡ " + s.energia + "/5" : ""}</span></button></li>`).join("")
-    : '<li class="vazio">A primeira semana ainda não foi guardada.</li>';
+    : '<li class="vazio">Ainda não há semanas guardadas. A primeira entra no diário quando guardares um resumo.</li>';
 }
 function graficoEnergia(pontos){
   const W = 210, H = 64, x = i => 18 + i * ((W - 30) / Math.max(pontos.length - 1, 1)), y = v => 46 - (v - 1) * 8;
