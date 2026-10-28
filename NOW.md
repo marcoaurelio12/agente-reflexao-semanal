@@ -5,6 +5,17 @@
 
 ## 2026-10-28
 
+- 13:18 · full-stack · **P2 fechado (A6/F6) + 2 gaps do ecrã**: `POST /api/resumo-mensal` a
+  funcionar — com LLM segue o `agente/MENSAL.md` novo (pt-PT, só factos, semanas por datas) via
+  `conversa.montar_contexto_mensal()`; sem chave monta texto determinístico dos factos
+  (energia semana a semana, prioridades cumpridas, temas repetidos; `conversa.resumo_mensal_mock()`).
+  Sidebar tem "Resumo do mês" (diálogo, botão desativado enquanto espera). Vista de semana exporta
+  markdown: "Copiar markdown" (clipboard + fallback de seleção) e "Descarregar .md"
+  (`semana-2026-W43.md`, corpo do `GET /api/memoria`). Privacidade sempre visível em <960px: faixa
+  fina sob a topbar (a nota do rodapé da sidebar vive na gaveta). 3 testes novos (`test_mensal.py`):
+  **40 verdes**. `ARQUITETURA.md` atualizado (§API, §Contexto, interfaces); roadmap item 3 feito.
+  Verificado em mock (curl ao endpoint + `node --check` no `app.js`; browser indisponível no
+  agente). `reset_demo` corrido.
 - 12:10 · full-stack · **Ecrã de produção contra a API real** (decisão 12, autonomia do Marco):
   frontend reescrito de raiz — conversa de reflexão (com cartão de fecho gerado pelo `/api/fechar`,
   prioridades e estados editáveis, guardar no diário do servidor), sidebar com conversas

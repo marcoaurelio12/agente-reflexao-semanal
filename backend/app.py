@@ -210,8 +210,19 @@ def ics(semana: str | None = None):
 
 @app.post("/api/resumo-mensal")
 def resumo_mensal():
-    """(P2) Evolução das prioridades e aprendizagens nas últimas 4 semanas."""
-    raise HTTPException(501, "A6: por implementar")
+    """(P2) Evolução das prioridades e aprendizagens nas últimas 4 semanas guardadas.
+
+    Com LLM: agente/MENSAL.md + diário + padrões + métricas. Sem chave: texto determinístico
+    com os mesmos factos (conversa.resumo_mensal_mock).
+    """
+    if llm.modo_mock():
+        return {"texto": conversa.resumo_mensal_mock()}
+    try:
+        texto = llm.responder(conversa.montar_contexto_mensal(),
+                              [{"role": "user", "content": "Escreve o resumo das últimas 4 semanas."}])
+    except Exception as e:
+        raise _erro_llm(e)
+    return {"texto": texto.strip()}
 
 
 # Tem de ficar no fim: serve o frontend em "/"

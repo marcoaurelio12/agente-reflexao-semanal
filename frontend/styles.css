@@ -72,6 +72,10 @@ button{cursor:pointer}
 .energia-card .lb{fill:var(--ink-2);font-size:9px}
 .energia-card .leg{font-size:11px;color:var(--ink-3);margin:4px 2px 0}
 .meta{margin:0 8px 8px;font-size:12px;color:var(--ink-2)}
+.mensal-btn{display:block;width:calc(100% - 8px);margin:0 4px 10px;border:1px dashed var(--line);background:none;
+  border-radius:8px;padding:6px 8px;font-size:12px;color:var(--ink-2)}
+.mensal-btn:hover{border-color:var(--ink-3);color:var(--ink)}
+.mensal-btn:disabled{opacity:.55;cursor:wait}
 .weeks .week{width:100%;text-align:left;border:0;background:none;border-radius:8px;padding:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .weeks .week:hover{background:var(--surface-2)}
 .weeks .week.on{background:var(--accent-soft)}
@@ -152,6 +156,7 @@ button{cursor:pointer}
 /* ── Vista de semana guardada ─────────── */
 .weekhead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;max-width:72ch;margin:0 auto 6px;flex-wrap:wrap}
 .weekhead h2{font-family:var(--f-display);font-size:22px;margin:2px 0 0}
+.wh-acoes{display:flex;gap:8px;flex-wrap:wrap}
 .weekbody{max-width:72ch;margin:14px auto 0;display:flex;flex-direction:column;gap:14px}
 .wsec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 18px}
 .wsec h4{margin:0 0 8px;font-size:13px;font-weight:600}
@@ -176,6 +181,16 @@ button{cursor:pointer}
 .werr{padding:6px 14px;font-size:12px;color:var(--alert)}
 .wform{padding:10px 12px 12px;border-top:1px solid var(--line)}
 
+/* ── Diálogo do resumo do mês ──────────── */
+.dlg{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:0;
+  width:min(560px,calc(100vw - 32px));box-shadow:0 12px 40px rgba(10,20,50,.25)}
+.dlg::backdrop{background:rgba(10,20,50,.35)}
+.dlg-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.dlg-head strong{font-family:var(--f-display);font-size:14px;display:block}
+.dlg-head span{font-size:11.5px;color:var(--ink-3)}
+.dlg .iconbtn{display:grid;width:28px;height:28px}
+.dlg-body{padding:14px 16px 16px;font-size:13.5px;white-space:pre-wrap;overflow-wrap:break-word;max-height:60vh;overflow-y:auto}
+
 /* ── Alerta e cuidado ─────────────────── */
 .care{max-width:72ch;margin:0 auto 14px;background:var(--good-soft);border-radius:12px;padding:14px 16px}
 .care h4{margin:0 0 8px;font-size:13.5px}
@@ -186,11 +201,18 @@ button{cursor:pointer}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:50;background:var(--ink);color:var(--surface);
   border-radius:999px;padding:9px 18px;font-size:13px;box-shadow:0 6px 24px rgba(10,20,50,.3)}
 
+/* ── Faixa de privacidade (mobile: a sidebar está fechada na gaveta) ── */
+.privacy-strip{display:none}
+
 /* ── Ecrãs pequenos ───────────────────── */
 @media (max-width:960px){
   .iconbtn{display:grid}
-  .layout{grid-template-columns:1fr;height:calc(100dvh - 59px)}
-  .sidebar{position:fixed;top:59px;bottom:0;left:0;width:min(320px,86vw);z-index:30;transform:translateX(-102%);transition:transform .2s ease;box-shadow:0 0 40px rgba(10,20,50,.25)}
+  /* linha compacta sempre visível sob a topbar: a nota do rodapé da sidebar está na gaveta */
+  .privacy-strip{display:block;margin:0;height:25px;line-height:25px;border-bottom:1px solid var(--line);
+    background:var(--surface-2);color:var(--ink-3);font-size:10.5px;text-align:center;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 12px}
+  .layout{grid-template-columns:1fr;height:calc(100dvh - 85px)}  /* 59 topbar + 26 faixa */
+  .sidebar{position:fixed;top:85px;bottom:0;left:0;width:min(320px,86vw);z-index:30;transform:translateX(-102%);transition:transform .2s ease;box-shadow:0 0 40px rgba(10,20,50,.25)}
   .sidebar.aberta{transform:none}
   .brand p{display:none}
   .msg{max-width:100%}

@@ -62,7 +62,7 @@ const K_CONVS = "reflexao.conversas.v1", K_GERAL = "reflexao.geral.v1";
 let ESTADO = null, MEMORIA = null;
 let convs = [], ativa = null;        // conversas de reflexão (a "ativa" está aberta no ecrã)
 let GERAL = { msgs: [] };            // thread da conversa livre (widget)
-let vista = "conversa", semanaAberta = null;
+let vista = "conversa", semanaAberta = null, semanaMarkdown = "";
 let busy = false, wbusy = false;
 
 function carregar(k, padrao){ try{ const r = localStorage.getItem(k); return r ? JSON.parse(r) : clone(padrao); }catch(e){ return clone(padrao); } }
@@ -389,6 +389,7 @@ function abrirSemana(sid){
   const s = MEMORIA.semanas.find(x => x.semana === sid);
   if (!s) return;
   semanaAberta = sid;
+  semanaMarkdown = s.markdown || "";
   ativa = null;
   abrirVista("semana");
   $("#weekId").textContent = s.semana;
@@ -397,6 +398,56 @@ function abrirSemana(sid){
   $("#weekBody").innerHTML = corpoSemana(s.markdown || "");
   renderSidebar();
 }
+
+/* ───────── Exportar a semana em markdown ───────── */
+function copiarTexto(txt, msgOk){
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(() => toast(msgOk), () => copiarTextoFallback(txt, msgOk));
+  } else copiarTextoFallback(txt, msgOk);
+}
+function copiarTextoFallback(txt, msgOk){
+  // seleção + cópia manual: para browsers sem acesso à clipboard API (ex.: contexto não seguro)
+  const ta = document.createElement("textarea");
+  ta.value = txt;
+  ta.setAttribute("readonly", "");
+  ta.style.cssText = "position:fixed;top:-100px;opacity:0";
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try{ ok = document.execCommand("copy"); }catch(e){}
+  ta.remove();
+  if (ok) toast(msgOk);
+  else toast("Não consegui copiar; tenta o «Descarregar .md».");
+}
+$("#weekCopiar").onclick = () => copiarTexto(semanaMarkdown, "Markdown da semana copiado.");
+$("#weekDescarregar").onclick = () => {
+  const blob = new Blob([semanaMarkdown || ""], { type: "text/markdown;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "semana-" + (semanaAberta || "atual") + ".md";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+};
+
+/* ───────── Resumo do mês (últimas 4 semanas) ───────── */
+async function verResumoMensal(){
+  const dlg = $("#mensalDialog"), corpo = $("#mensalTexto"), btn = $("#mensalBtn");
+  if (!dlg.open) dlg.showModal();
+  corpo.innerHTML = '<span class="thinking" aria-label="A preparar o resumo"><i></i><i></i><i></i></span>';
+  btn.disabled = true;
+  try{
+    const r = await api("/api/resumo-mensal", {});
+    corpo.textContent = r.texto;
+  }catch(e){
+    corpo.textContent = "Não consegui gerar o resumo (" + e.message + ").";
+  }
+  btn.disabled = false;
+}
+$("#mensalBtn").onclick = verResumoMensal;
+$("#mensalClose").onclick = () => $("#mensalDialog").close();
+$("#mensalDialog").addEventListener("click", e => { if (e.target === $("#mensalDialog")) $("#mensalDialog").close(); });
 function mdLeve(linha){
   return esc(linha)
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")

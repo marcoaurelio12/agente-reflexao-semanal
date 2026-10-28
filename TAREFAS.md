@@ -22,7 +22,9 @@ Ficheiros: `frontend/` · Detalhe: [`frontend/README.md`](frontend/README.md)
 - [x] F3 Painel "O teu diário": semanas anteriores, padrões, gráfico da energia
 - [x] F4 Faixa de privacidade sempre visível
 - [x] F5 Ligar à API real (T+1:30)
-- [x] F6 (P1) Métricas no painel · (P2) botão "Resumo do mês" — métricas sim; resumo mensal fica
+- [x] F6 (P1) Métricas no painel · (P2) botão "Resumo do mês" (2026-10-28: botão na sidebar abre um
+  diálogo com o texto do `POST /api/resumo-mensal`) · exportar a semana em markdown (copiar +
+  descarregar `.md`) · faixa de privacidade sempre visível em ecrãs <960px
 - [x] F7 Tirar do ecrã os nomes das ferramentas, os caminhos de ficheiros e o debug (ficam em `reflexaoDiag()` na consola)
 - [x] F8 (pós-hackathon, 2026-10-28) Ecrã reescrito contra a API real: resumo gerado pelo
   `/api/fechar`, conversas anteriores retomáveis, widget de conversa livre, `.ics`, badge do modo
@@ -38,7 +40,9 @@ Ficheiros: `backend/app.py`, `conversa.py`, `llm.py`, `requirements.txt` · Deta
 - [x] A3 `POST /api/chat`: abertura, perguntas, seguimento se vago, marcador de fecho
 - [x] A4 `POST /api/fechar` (JSON de `agente/FECHO.md`) + `POST /api/guardar`
 - [x] A5 `GET /api/memoria`
-- [ ] A6 (P2) `POST /api/resumo-mensal`
+- [x] A6 (P2, 2026-10-28) `POST /api/resumo-mensal`: `agente/MENSAL.md` +
+  `conversa.montar_contexto_mensal()` com o LLM; sem chave, texto determinístico com os factos
+  do diário (`conversa.resumo_mensal_mock()`)
 
 **Feito =** os testes de aceitação 1 a 3 do `docs/SCOPE.md` passam com a chave real.
 

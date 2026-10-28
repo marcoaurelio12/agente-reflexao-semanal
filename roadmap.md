@@ -13,9 +13,11 @@ Estas estavam no plano (MVP/P1/P2) e ficaram a caminho da linha de meta.
    `/api/chat`, `/api/fechar` e `/api/guardar`; a semana guarda-se em `memoria/diario/`.
 2. ~~**Métricas no painel (P1).**~~ **Feito a 2026-10-28:** energia semana a semana e prioridades
    cumpridas (X de Y) na sidebar, a partir de `GET /api/memoria`.
-3. **Resumo mensal (P2).** Evolução das prioridades e das aprendizagens nas últimas 4 semanas.
-   O `POST /api/resumo-mensal` está previsto no contrato e hoje devolve 501; faltam o fecho do
-   endpoint e o botão "Resumo do mês" no painel.
+3. ~~**Resumo mensal (P2).**~~ **Feito a 2026-10-28:** `POST /api/resumo-mensal` devolve a
+   evolução das prioridades e das aprendizagens nas últimas 4 semanas (LLM com `agente/MENSAL.md`
+   ou, sem chave, texto determinístico com os factos do diário); botão "Resumo do mês" na sidebar
+   abre um diálogo com o texto. No mesmo dia: exportar a semana para markdown (copiar +
+   descarregar `.md`) e faixa de privacidade sempre visível em ecrãs pequenos.
 4. **Lembrete de sexta-feira.** Meio caminho feito a 2026-10-28: `GET /api/ics` põe a reflexão
    recorrente no calendário da pessoa (sexta, 17:00, com as prioridades na descrição). Falta o
    aviso e-mail/push, que continua dependente de deploy.

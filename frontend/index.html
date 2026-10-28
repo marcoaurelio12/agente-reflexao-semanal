@@ -26,9 +26,11 @@
     <span class="badge" id="modoBadge" hidden></span>
     <button type="button" class="btn primary" id="novaBtn">Nova reflexão</button>
   </div>
-</header>
+  </header>
 
-<div class="layout">
+  <p class="privacy-strip" role="note">Dados fictícios · o diário fica em markdown neste servidor — sem contas, sem a chefia ver nada.</p>
+
+  <div class="layout">
   <aside class="sidebar" id="sidebar" aria-label="Conversas e diário">
     <section class="side-sec">
       <h2>Conversas</h2>
@@ -38,6 +40,7 @@
       <h2>O teu diário</h2>
       <div class="energia-card" id="energiaCard" hidden></div>
       <p class="meta" id="prioMeta" hidden></p>
+      <button type="button" class="mensal-btn" id="mensalBtn">Resumo do mês</button>
       <ul class="weeks" id="weekList"></ul>
     </section>
     <footer class="privacy">
@@ -73,10 +76,20 @@
           <div class="eyebrow" id="weekId"></div>
           <h2 id="weekTitle"></h2>
         </div>
-        <a class="btn" id="weekIcs" href="/api/ics" download>
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="2.5" y="3" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 6.5h11M5.5 1.8v2.4M10.5 1.8v2.4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
-          Adicionar ao calendário
-        </a>
+        <div class="wh-acoes">
+          <a class="btn" id="weekIcs" href="/api/ics" download>
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="2.5" y="3" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 6.5h11M5.5 1.8v2.4M10.5 1.8v2.4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+            Adicionar ao calendário
+          </a>
+          <button type="button" class="btn" id="weekCopiar" title="Copiar a entrada desta semana em markdown">
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 3.5v.5H3.9A1.4 1.4 0 0 0 2.5 5.4v7.2h-.4A1.6 1.6 0 0 1 .5 11V3.1a1.6 1.6 0 0 1 1.6-1.6h5.8a1.6 1.6 0 0 1 1.6 1.6v.4z" transform="translate(1.5 .5)" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+            Copiar markdown
+          </button>
+          <button type="button" class="btn" id="weekDescarregar" title="Descarregar a entrada desta semana como ficheiro .md">
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 2v8" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M4.5 6.8 8 10.3l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 13.5h11" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+            Descarregar .md
+          </button>
+        </div>
       </div>
       <div class="weekbody" id="weekBody"></div>
     </section>
@@ -103,6 +116,17 @@
     <button type="submit" class="btn primary send" id="wsendBtn">Enviar</button>
   </form>
 </section>
+
+<!-- Resumo do mês (as últimas 4 semanas do diário) -->
+<dialog class="dlg" id="mensalDialog" aria-label="Resumo do mês">
+  <header class="dlg-head">
+    <div><strong>Resumo do mês</strong><span>as últimas 4 semanas do teu diário</span></div>
+    <button type="button" class="iconbtn" id="mensalClose" aria-label="Fechar">
+      <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+  <div class="dlg-body" id="mensalTexto" aria-live="polite"></div>
+</dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toastTxt"></span></div>
 

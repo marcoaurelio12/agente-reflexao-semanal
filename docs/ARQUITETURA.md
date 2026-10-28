@@ -129,9 +129,13 @@ Badge do cabeçalho do frontend ("respostas de exemplo" vs. "Gemini") e subtítu
 com as prioridades e o ajuste de hábito da semana indicada (ou da última guardada) na descrição.
 Semana desconhecida → 404. `Content-Disposition: attachment; filename="reflexao-semanal.ics"`.
 
-### `POST /api/resumo-mensal` (P2)
+### `POST /api/resumo-mensal`
 
-Pedido vazio → `{"texto": "…"}` com a evolução das prioridades e aprendizagens nas últimas 4 semanas.
+Pedido vazio → `{"texto": "…"}` com a evolução das prioridades e aprendizagens nas últimas
+4 semanas guardadas. Com LLM: system prompt de `agente/MENSAL.md` + diário + padrões + métricas
+(e uma só mensagem de utilizador com a instrução de escrever o texto). Sem chave: texto
+determinístico montado no servidor com os mesmos factos (energia semana a semana, prioridades
+cumpridas, temas repetidos). Falha do LLM → 502, como nos outros endpoints.
 
 ## Interfaces internas do backend
 
@@ -162,6 +166,8 @@ extrair_json(system: str, mensagens: list[dict]) -> dict
 montar_contexto(nota_extra: str | None = None) -> str
 montar_contexto_fecho() -> str
 montar_contexto_geral() -> str                  # widget: agente/GERAL.md + segurança + diário completo
+montar_contexto_mensal() -> str                 # resumo-mensal: agente/MENSAL.md + diário + padrões + métricas
+resumo_mensal_mock() -> str                     # resumo-mensal sem chave: factos calculados, texto determinístico
 ```
 
 ## Contexto (system prompt), por esta ordem
@@ -180,6 +186,8 @@ montar_contexto_geral() -> str                  # widget: agente/GERAL.md + segu
 Contexto do fecho: `agente/FECHO.md` + `agente/temas.yaml` + itens 4, 6, 7 e 9 + a conversa.
 Contexto da conversa livre: `agente/GERAL.md` + `agente/SEGURANCA.md` + itens 4, 5, 6, 7, 8 e 9
 (diário completo, não só as últimas 4 semanas).
+Contexto do resumo mensal: `agente/MENSAL.md` + itens 4, 6 e 7 (últimas 4 semanas guardadas) +
+secção de métricas (energia por semana, prioridades cumpridas).
 Os ficheiros são lidos em cada pedido, para a equipa afinar os prompts sem reiniciar o servidor.
 
 ## Formato do diário
