@@ -1,51 +1,52 @@
 # Agente de Reflexão Semanal
 
-> Hackathon de AI agents · Desafio 05 · Reflexão
+Um agente de IA que, em 5 minutos à sexta-feira, conduz a reflexão da semana (o que correu bem,
+o que aprendi, o que me bloqueou, como está a energia), lembra-se das semanas anteriores e
+devolve um resumo, 3 prioridades, os padrões que se repetem e um pequeno ajuste de hábito.
 
-Um agente que, em 5 minutos à sexta, conduz a reflexão da semana (o que correu bem, o que
-aprendi, o que me bloqueou, como está a energia), lembra-se das semanas anteriores e devolve
-um resumo, 3 prioridades, os padrões que se repetem e um pequeno ajuste de hábito.
+Nasceu no desafio 05 de um hackathon de AI agents (3 horas, em equipa) e continuou depois do
+hackathon: ecrã ligado à API real, notas do dia, resumo mensal, painel de consentimento e
+75 testes. **Todos os dados são fictícios** (persona: Inês, consultora júnior inventada).
 
-**Todos os dados deste repositório são fictícios** (persona: Inês, consultora júnior inventada).
+## O que mostra
 
-## Ler primeiro: o que há a fazer e quem faz o quê
-
-Temos 3 horas. Python + Gemini (API compatível com OpenAI). **Não há base de dados:** a memória é um diário em
-ficheiros markdown (`memoria/`), que já tem 4 semanas fictícias. A demo ao vivo é a semana
-seguinte, em que o agente tem de reparar que um bloqueio se repete.
-
-| Função | O que faz | Começa por |
-|---|---|---|
-| **Frontend** | Ecrã do chat, cartão de resumo, painel do diário | [`frontend/README.md`](frontend/README.md) |
-| **Backend A** | Servidor, chamadas ao LLM (Gemini), fluxo da conversa | [`backend/README.md`](backend/README.md) |
-| **Backend B** | Ler/escrever o diário, deteção de padrões, filtro de segurança, testes | [`backend/README.md`](backend/README.md) |
-| **Pitch A** | História, slides, ensaios | [`pitch/README.md`](pitch/README.md) | _(nome)_ |
-| **Pitch B** | Guião da demo, afinar os prompts do agente, vídeo de backup | [`pitch/README.md`](pitch/README.md) |
-
-1. Lê [`docs/SCOPE.md`](docs/SCOPE.md) (5 min): o que entra, o que fica de fora, o relógio.
-2. Põe o teu nome em [`TAREFAS.md`](TAREFAS.md).
-3. Abre o README da tua pasta. Tem as tarefas e um prompt pronto a colar no teu assistente de código.
-4. Mexe só nos teus ficheiros (tabela em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md)).
-
-**Relógio:** T+0:20 toda a gente a construir · **T+1:30** juntar frontend e backend ·
-**T+2:15** parar features e gravar o vídeo de backup · T+2:45 ensaio final.
+- **Corre sem chave de API.** Sem `OPENAI_API_KEY`, o backend responde em modo mock: qualquer
+  pessoa corre o projeto e os testes sem custos.
+- **Independente do fornecedor.** Usa o SDK `openai` contra qualquer endpoint compatível
+  (Gemini por omissão, z.ai ou OpenAI mudando só o `.env`). Se o modelo principal der 429, 5xx
+  ou demorar, tenta automaticamente os modelos alternativos.
+- **Prompts fora do código.** O "cérebro" do agente vive em [`agente/*.md`](agente/) e é lido
+  em cada pedido. Mudar o tom ou as perguntas é editar texto, não código.
+- **Padrões auditáveis.** O LLM só etiqueta cada bloqueio, aprendizagem e prioridade com um
+  tema de uma lista fechada ([`agente/temas.yaml`](agente/temas.yaml)). É o código que conta as
+  repetições entre semanas e decide o que é um padrão, não o modelo.
+- **Segurança em duas camadas.** Um filtro em código corre *antes* do LLM: se alguém descrever
+  mal-estar sério, a reflexão pára e o agente sugere apoio humano (SNS 24: 808 24 24 24 · 112).
+  As regras no prompt são a segunda camada. O agente não é terapeuta e não diagnostica.
+- **Consentimento aplicado no servidor.** O painel «O que o agente sabe sobre ti» liga e desliga
+  o que entra no contexto do LLM (agenda, conversa livre, diário completo). Os toggles são
+  respeitados pela API, não só escondidos no ecrã. «Apagar tudo» vai para uma lixeira com
+  desfazer.
+- **Minimização de dados.** Guarda-se o resumo estruturado da semana, não a transcrição.
 
 ## Como funciona
 
 ```
-conversa no browser ──▶ servidor Python ──▶ Gemini (Google)
+conversa no browser ──▶ servidor Python (FastAPI) ──▶ LLM (Gemini, z.ai ou OpenAI)
                            │   ▲
              lê e escreve  ▼   │  agente/  (instruções, perguntas, segurança: markdown)
                          memoria/ (perfil + índice + diário: markdown)
 ```
 
-- `agente/`: o "cérebro" do agente em markdown. Mudar o tom ou as perguntas é editar texto, não código.
-- `memoria/`: o diário. Uma entrada por semana, legível por pessoas e pelo LLM. O cabeçalho de
-  cada entrada tem etiquetas de tema, e o código conta as repetições para detetar padrões.
-- O ecrã (`frontend/`) fala com a API real: conversa → resumo gerado pelo LLM (revisto e editado)
-  → semana guardada no diário. Conversas anteriores são retomáveis, há um widget de conversa
-  livre e um `.ics` para pôr a reflexão no calendário (sexta, 17:00).
-- Detalhe completo e contrato de API: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
+1. A pessoa conversa com o agente; a conversa usa o diário das semanas anteriores como contexto.
+2. No fecho, o LLM gera o resumo, as prioridades e os temas; a pessoa revê e edita antes de guardar.
+3. A semana é guardada no diário em markdown, legível por pessoas e pelo LLM.
+4. O código compara com as semanas anteriores e assinala o que se repete (um bloqueio que volta,
+   uma aprendizagem que se consolida).
+
+Há também um widget de conversa livre, notas do dia, um resumo mensal e um `.ics` para pôr a
+reflexão no calendário (sexta, 17:00). Contrato de API e regras de padrões:
+[`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 
 ## Correr localmente
 
@@ -57,39 +58,48 @@ copy .env.example .env            # macOS/Linux: cp .env.example .env
 python -m uvicorn backend.app:app --reload
 ```
 
-Abre http://localhost:8000. Sem `OPENAI_API_KEY` no `.env`, o backend corre em modo mock.
+Abre http://localhost:8000. Sem chave no `.env`, corre em modo mock. Para usar um modelo real,
+preenche `OPENAI_API_KEY` (as opções estão comentadas no [`.env.example`](.env.example)).
+
+## Testes
+
+```bash
+python -m pytest
+```
+
+75 testes, todos sem chave de API: deteção de padrões, filtro de segurança, respostas vagas,
+consentimento, notas, resumo mensal, `.ics` e o fluxo do chat. O guião da demo, com os casos do
+enunciado (um bloqueio repetido na 4.ª semana, uma resposta vaga), está em
+[`pitch/ROTEIRO-DEMO.md`](pitch/ROTEIRO-DEMO.md).
 
 ## Onde ficam os dados
 
-Em ficheiros markdown em `memoria/`, no computador onde corre o servidor. Guarda-se o resumo
-estruturado da semana, não a transcrição. O texto da conversa é enviado à API do Gemini para
-gerar as respostas. Detalhes em [`memoria/README.md`](memoria/README.md).
+Em ficheiros markdown em `memoria/`, no computador onde corre o servidor. Com um modelo real, o
+texto da conversa é enviado à API do fornecedor escolhido para gerar as respostas. Detalhes em
+[`memoria/README.md`](memoria/README.md).
 
-## Cuidados
+## Limites
 
-O agente não é terapeuta nem faz diagnósticos. Se alguém descrever mal-estar sério, o código
-pára a reflexão antes de chamar o LLM e sugere apoio humano (SNS 24: 808 24 24 24 · 112).
-Regras em [`agente/SEGURANCA.md`](agente/SEGURANCA.md).
+Fora de âmbito, de propósito: login, vários utilizadores, base de dados, integrações reais
+(Outlook, Teams) e deploy. Está tudo descrito como próximo passo em [`roadmap.md`](roadmap.md) e
+em [`docs/propostas/`](docs/propostas/).
+
+## Como foi construído
+
+Num hackathon de 3 horas, com o trabalho dividido por funções e o contexto em ficheiros
+(`DECISOES.md`, `NOW.md`, `TAREFAS.md`, `AGENTS.md`) para que pessoas e assistentes de código
+trabalhassem a partir da mesma fonte. O kit original da equipa está em
+[`docs/HACKATHON.md`](docs/HACKATHON.md).
 
 ## Estrutura
 
 ```
-AGENTS.md / CLAUDE.md   router para assistentes de código (Claude Code, Cursor, Codex…)
-NOW.md                  diário da equipa: o que foi feito, pontas soltas (mais recente primeiro)
-DECISOES.md             o que já está decidido; não se volta a discutir
-TAREFAS.md              quem faz o quê e o que conta como feito
-docs/                   SCOPE (plano), ARQUITETURA (contrato), ideias da equipa
-agente/                 instruções do agente (markdown) + temas.yaml
-memoria/                CONTEXTO.md · INDEX.md · diario/ · agenda/
-backend/                Python (FastAPI)
-frontend/               HTML/CSS/JS
-pitch/                  slides, guião da demo
+agente/       instruções do agente (markdown) + temas.yaml
+backend/      Python (FastAPI): conversa, LLM, memória, padrões, segurança, consentimento
+frontend/     HTML/CSS/JS, sem build, servido pelo mesmo servidor
+memoria/      perfil, índice e diário fictícios (4 semanas)
+tests/        pytest
+docs/         arquitetura, scope, propostas, notas do hackathon
+pitch/        slides e guião da demo
+AGENTS.md     router para assistentes de código · DECISOES.md · NOW.md · TAREFAS.md
 ```
-
-## Como trabalhamos
-
-O mesmo método de contexto em ficheiros que usamos na Alinhadamente:
-- Quem fecha uma tarefa marca-a em `TAREFAS.md` e escreve uma linha no topo de `NOW.md`.
-- Uma decisão nova vai para `DECISOES.md`.
-- Commits pequenos e frequentes para `main`; `git pull --rebase` antes de `git push`.
-- Repo público: **nunca** fazer commit do `.env` nem de chaves.
